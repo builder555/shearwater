@@ -1,3 +1,5 @@
+### This is very much a work in progress. Some of these notes may be completely wrong.
+
 ### Findings so far:
 
 * A message is always prepended with 0x01 0x00
