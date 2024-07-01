@@ -12,10 +12,11 @@ ESC_ESC = 0xDD
 SERVICE_UUID = "FE25C237-0ECE-443C-B0AA-E02033E7029D"
 CHARACTERISTIC_UUID = "27B7570B-359E-45A3-91BB-CF7E70049BD2"
 
+
 def slip_decode(data):
     if data is None or len(data) < 1:
         return None
-    
+
     decoded_data = bytearray(len(data))
     decoded_data_index = 0
     i = 0
@@ -39,6 +40,8 @@ def slip_decode(data):
             decoded_data_index += 1
         i += 1
     return None
+
+
 def slip_encode(data):
     encoded = bytearray()
     for byte in data:
@@ -51,31 +54,40 @@ def slip_encode(data):
     encoded.append(END_OF_FRAME)
     return encoded
 
-class DeviceNotFound(Exception): pass
-class DeviceNotConnected(Exception): pass
+
+class DeviceNotFound(Exception):
+    pass
+
+
+class DeviceNotConnected(Exception):
+    pass
+
 
 class BLEShearwater:
     def __init__(self):
         self._queue = bytearray()
         self._accumulator = bytearray()
-        self._client: BleakClient|None = None
+        self._client: BleakClient | None = None
         self._callbacks = []
+
     async def subscribe(self, callback: Callable):
         if not self._callbacks:
             await self.connect()
         if callback in self._callbacks:
             return
         self._callbacks.append(callback)
+
     async def unsubscribe(self, callback: Callable):
         self._callbacks.remove(callback)
         if not self._callbacks:
             await self.close_connection()
+
     async def connect(self):
         devices = await BleakScanner.discover()
         for d in devices:
-            if d.name and 'perdix' in d.name.lower():
+            if d.name and "perdix" in d.name.lower():
                 target_device = d
-                print(f'perdix found: {target_device}')
+                print(f"perdix found: {target_device}")
                 break
         else:
             raise DeviceNotFound
@@ -90,8 +102,8 @@ class BLEShearwater:
     async def send_data(self, data: bytes):
         if self._client is None:
             raise DeviceNotConnected
-        prepend = bytes([0x01, 0x00, 0xFF, 0x01, len(data)+1, 0x00])
-        encoded = slip_encode(prepend+data)
+        prepend = bytes([0x01, 0x00, 0xFF, 0x01, len(data) + 1, 0x00])
+        encoded = slip_encode(prepend + data)
         await self._client.write_gatt_char(CHARACTERISTIC_UUID, encoded)
 
     async def close_connection(self):
@@ -101,43 +113,52 @@ class BLEShearwater:
         await self.send_data(bytes([0x2E, 0x90, 0x20, 0x00]))
         await self._client.disconnect()
 
-def decode_manifest(data:bytes):
-    def get_num(data:bytes):
-        return int.from_bytes(data, byteorder='big')
 
-    def get_date(timestamp:int):
+def decode_manifest(data: bytes):
+    def get_num(data: bytes):
+        return int.from_bytes(data, byteorder="big")
+
+    def get_date(timestamp: int):
         # shearwater does not have a concept of timezones, so it shows as UTC
-        return datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-    def get_hh_mm_ss(timestamp:int):
-        return datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc).strftime("%Hh %Mm %Ss")
+        return datetime.datetime.fromtimestamp(
+            timestamp, tz=datetime.timezone.utc
+        ).strftime("%Y-%m-%d %H:%M:%S")
+
+    def get_hh_mm_ss(timestamp: int):
+        return datetime.datetime.fromtimestamp(
+            timestamp, tz=datetime.timezone.utc
+        ).strftime("%Hh %Mm %Ss")
+
     depth_units = {
-        0: 'meters',
-        1: 'feet',
+        0: "meters",
+        1: "feet",
     }
     computer_mode = {
-        0 : "CC/BO",
-        1 : "OC Tec",
-        2 : "Gauge",
-        3 : "PPO2 Display",
-        4 : "SC/BO",
-        5 : "CC/BO 2",
-        6 : "OC Rec",
-        7 : "Freedive",
+        0: "CC/BO",
+        1: "OC Tec",
+        2: "Gauge",
+        3: "PPO2 Display",
+        4: "SC/BO",
+        5: "CC/BO 2",
+        6: "OC Rec",
+        7: "Freedive",
     }
     dive = {
-        "code" : data[0:2].hex(),
-        "dive_no" : get_num(data[2:4]),
-        "dive_start" : get_date(get_num(data[4:8])),
-        "dive_end" : get_date(get_num(data[8:12])),
-        "dive_duration" : get_hh_mm_ss(get_num(data[12:16])),
-        "max_depth_x10" : get_num(data[16:18]),
-        "avg_depth_x10" : get_num(data[18:20]),
+        "code": data[0:2].hex(),
+        "dive_no": get_num(data[2:4]),
+        "dive_start": get_date(get_num(data[4:8])),
+        "dive_end": get_date(get_num(data[8:12])),
+        "dive_duration": get_hh_mm_ss(get_num(data[12:16])),
+        "max_depth_x10": get_num(data[16:18]),
+        "avg_depth_x10": get_num(data[18:20]),
         "record_address_start": data[20:24].hex(),
         "record_address_end": data[24:28].hex(),
         "depth_units": depth_units[get_num(data[28:29])],
-        "temp_units": get_num(data[29:30]), # ignore
+        "temp_units": get_num(data[29:30]),  # ignore
         "computer_mode": computer_mode[get_num(data[30:31])],
-        "manifest_version": get_num(data[31:32]), # 0 - original, 1 - adds dive computer mode
+        "manifest_version": get_num(
+            data[31:32]
+        ),  # 0 - original, 1 - adds dive computer mode
     }
     return dive
 
@@ -150,15 +171,18 @@ class Manifest:
         self._manifests = []
         self._has_reached_end = False
         self._is_new_data = False
+
     async def _send_data(self, data: bytes):
         self._is_new_data = False
         await self._dev.send_data(data)
+
     async def wait_for_new_data(self):
         while not self._is_new_data:
             await asyncio.sleep(0.1)
+
     def _on_data(self, data: bytes):
-        print(f'received data: {data.hex()}')
-        is_manifest_ack = bytes.fromhex('01ff0400751082') in data
+        print(f"received data: {data.hex()}")
+        is_manifest_ack = bytes.fromhex("01ff0400751082") in data
         if is_manifest_ack:
             self._is_acked = True
             self._is_new_data = True
@@ -169,12 +193,15 @@ class Manifest:
             self._is_new_data = True
             self.decode_manifests()
             self._accumulator = bytearray()
-            self._has_reached_end = self._has_reached_end or bytes([0,0,0,0,0,0,0]) in data
+            self._has_reached_end = (
+                self._has_reached_end or bytes([0, 0, 0, 0, 0, 0, 0]) in data
+            )
+
     def decode_manifests(self):
-        def extract_manifests(data:bytes) -> list[bytes]:
+        def extract_manifests(data: bytes) -> list[bytes]:
             payload = data[6:]
-            manifests = [payload[i:i+32] for i in range(0, len(payload), 32)]
-            all_ok = [True for m in manifests if m[0] == 0xa5 and m[1] == 0xc4]
+            manifests = [payload[i : i + 32] for i in range(0, len(payload), 32)]
+            all_ok = [True for m in manifests if m[0] == 0xA5 and m[1] == 0xC4]
             if not all_ok:
                 raise Exception("Not all manifests start with 0xa5 0xc4")
             return manifests
@@ -211,5 +238,6 @@ async def main():
     await man.read()
     print(json.dumps(man._manifests, indent=2))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(main())
