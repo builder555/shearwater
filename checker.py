@@ -5,8 +5,8 @@ END_OF_FRAME = 0xC0
 ESC_CODE = 0xDB
 ESC_END = 0xDC
 ESC_ESC = 0xDD
-SERVICE_UUID = "FE25C237-0ECE-443C-B0AA-E02033E7029D"  #
-CHARACTERISTIC_UUID = "27B7570B-359E-45A3-91BB-CF7E70049BD2"  #
+SERVICE_UUID = "FE25C237-0ECE-443C-B0AA-E02033E7029D"
+CHARACTERISTIC_UUID = "27B7570B-359E-45A3-91BB-CF7E70049BD2"
 
 def slip_decode(data):
     decoded = bytearray()
@@ -56,10 +56,13 @@ async def detect_device():
     async with BleakClient(target_device) as client:
         await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
 
-        payload = bytearray([0x35, 0x00, 0x34, 0xE0, 0x00, 0x00, 0x00])
+        payload = bytearray([0x35, 0x00, 0x34, 0xE0, 0x00, 0x00, 0x00, 0x00])
         await send_data(client, payload)
         await asyncio.sleep(2)
-
+        await send_data(client, bytearray([0x36, 0x01]))
+        await asyncio.sleep(10)
+        await send_data(client, bytearray([0x2E, 0x90, 0x20, 0x00]))
+        
         await client.stop_notify(CHARACTERISTIC_UUID)
         
 if __name__ == '__main__':
