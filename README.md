@@ -16,3 +16,10 @@
     * while received data < ZZ, request next block of data: 0x36 NN
         * NN: block number, starting at 1
 * stop bluetooth communication: 0x2E 0x90 0x20 0x00
+
+
+### TODO
+- [ ] Figure out proper decoding algorithm
+- [ ] Clean up send/receive loop
+- [ ] Put message hex in vars
+- [ ] Check messages against actual logs
