@@ -47,7 +47,7 @@ const dives = [
     },
     {
         "code": "a5c4",
-        "diveNo": 21,
+        "diveNo": 2100,
         "diveStart": "2023-10-31 11:55:01",
         "diveEnd": "2023-10-31 12:51:03",
         "diveDuration": 3367,
@@ -62,7 +62,7 @@ const dives = [
     },
     {
         "code": "a5c4",
-        "diveNo": 20,
+        "diveNo": 200,
         "diveStart": "2023-10-31 10:08:38",
         "diveEnd": "2023-10-31 11:06:31",
         "diveDuration": 3478,
@@ -77,7 +77,7 @@ const dives = [
     },
     {
         "code": "a5c4",
-        "diveNo": 13,
+        "diveNo": 65535,
         "diveStart": "2023-07-23 09:43:13",
         "diveEnd": "2023-07-23 09:51:10",
         "diveDuration": 482,
@@ -104,7 +104,8 @@ function getHhMmSs(s) {
 
 function drawClock(ctx, radius, minutes) {
     drawFace(ctx, radius);
-    drawNumbers(ctx, radius);
+    // drawNumbers(ctx, radius);
+    drawTicks(ctx, radius);
     drawTime(ctx, radius, minutes);
 }
 function drawBackgroundArc(ctx, startAngle, endAngle, radius) {
@@ -117,11 +118,13 @@ function drawBackgroundArc(ctx, startAngle, endAngle, radius) {
 }
 
 function drawFace(ctx, radius) {
+    // background
     // ctx.beginPath();
     // ctx.arc(0, 0, radius, 0, 2 * Math.PI);
     // // ctx.fillStyle = '#334041';
     // ctx.fillStyle = '#334041';
     // ctx.fill();
+
     ctx.beginPath();
     ctx.arc(0, 0, radius * 0.01, 0, 2 * Math.PI);
     ctx.fillStyle = '#fff';
@@ -146,9 +149,34 @@ function drawNumbers(ctx, radius) {
     }
 }
 
+function drawTicks(ctx, radius) {
+    let ang;
+    const ticks = 6;
+    ctx.strokeStyle = '#ff0';
+    for (let num = 1; num <= ticks; num++) {
+        ang = num * Math.PI / (ticks / 2);
+        ctx.rotate(ang);
+        ctx.translate(0, -radius * 0.99);
+        
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        // if (num % 5 === 0) {
+        //     ctx.lineTo(0, radius * 0.1);
+        //     ctx.lineWidth = 6;
+        // } else {
+        ctx.lineTo(0, radius * 0.2);
+        ctx.lineWidth = 0.75;
+        // }
+        ctx.stroke();
+        
+        ctx.translate(0, radius * 0.99);
+        ctx.rotate(-ang);
+    }
+}
+
 function drawTime(ctx, radius, minutes) {
     const hourPos = Math.PI * 2 * Math.min(120, minutes)/120;
-    drawHand(ctx, hourPos, radius * 0.8, radius * 0.03);
+    // drawHand(ctx, hourPos, radius * 0.8, radius * 0.03);
     drawBackgroundArc(ctx, Math.PI*1.5, hourPos - Math.PI / 2, radius);
 }
 
@@ -191,12 +219,13 @@ createApp({
         const dateStart = new Date(dive.diveStart);
         dive.startDateFmt = dateStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
         dive.startTimeFmt = dateStart.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        dive.diveDurationFmt = getHhMmSs(dive.diveDuration);
     });
-    function toggleDivePicked(dive, isPicked) {
-      if (isPicked) {
-        picked.value.push(dive.diveNo);
-      } else {
-        picked.value = picked.value.filter((d) => d !== dive.diveNo);
+    function toggleDivePicked(dive) {
+      if (picked.value.includes(dive.diveNo)) {
+          picked.value = picked.value.filter((d) => d !== dive.diveNo);
+        } else {
+          picked.value.push(dive.diveNo);
       }
     }
     function toggleAllDives(event) {
@@ -206,12 +235,23 @@ createApp({
         picked.value = [];
       }
     }
+    function getFontSize(strDiveNo) {
+        const diveNo = parseInt(strDiveNo);
+        if (diveNo >= 10000) {
+            return '1.75em';
+        }
+        if (diveNo >= 1000) {
+            return '2.2em';
+        }
+        return '2.5em';
+    }
     return {
       message,
       dives,
       picked,
       toggleDivePicked,
       toggleAllDives,
+      getFontSize,
     }
   }
 }).mount('#app')
