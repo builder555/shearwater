@@ -99,11 +99,7 @@ class BLEDevice {
     async sendData(data) {
         const prepend = new Uint8Array([0x01, 0x00, 0xFF, 0x01, data.length + 1, 0x00])
         const dataToSend = new Uint8Array([...prepend, ...data]);
-        // const dataToSend = new Uint8Array(prepend.length + data.length);
-        // dataToSend.set(prepend);
-        // dataToSend.set(data, prepend.length);
         const encodedData = slipEncode(dataToSend);
-        console.log('sending', encodedData);
         await this.characteristic.writeValue(encodedData);
     }
 }
@@ -130,15 +126,7 @@ function decodeManifest(data) {
     function getDate(timestamp) {
       return new Date(timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
     }
-  
-    function getHhMmSs(timestamp) {
-      const date = new Date(timestamp * 1000);
-      const hours = String(date.getUTCHours()).padStart(2, '0');
-      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-      const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-      return `${hours}h ${minutes}m ${seconds}s`;
-    }
-  
+    
     const depthUnits = {
       0: "meters",
       1: "feet"
@@ -160,7 +148,7 @@ function decodeManifest(data) {
       diveNo: getNum(data.slice(2, 4)),
       diveStart: getDate(getNum(data.slice(4, 8))),
       diveEnd: getDate(getNum(data.slice(8, 12))),
-      diveDuration: getHhMmSs(getNum(data.slice(12, 16))),
+      diveDuration: getNum(data.slice(12, 16)),
       maxDepthX10: getNum(data.slice(16, 18)),
       avgDepthX10: getNum(data.slice(18, 20)),
       recordAddressStart: Array.from(data.slice(20, 24)).map(byte => byte.toString(16).padStart(2, '0')).join(''),
@@ -196,7 +184,6 @@ class Manifest {
     }
   
     _onData(data) {
-      console.log('received data:', data);
       const isManifestAck = isSubArray(new Uint8Array([0x01, 0xff, 0x04, 0x00, 0x75, 0x10, 0x82]), data);
       if (isManifestAck) {
         this._isAcked = true;
