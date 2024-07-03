@@ -104,7 +104,6 @@ function getHhMmSs(s) {
 
 function drawClock(ctx, radius, minutes) {
     drawFace(ctx, radius);
-    // drawNumbers(ctx, radius);
     drawTicks(ctx, radius);
     drawTime(ctx, radius, minutes);
 }
@@ -118,35 +117,10 @@ function drawBackgroundArc(ctx, startAngle, endAngle, radius) {
 }
 
 function drawFace(ctx, radius) {
-    // background
-    // ctx.beginPath();
-    // ctx.arc(0, 0, radius, 0, 2 * Math.PI);
-    // // ctx.fillStyle = '#334041';
-    // ctx.fillStyle = '#334041';
-    // ctx.fill();
-
     ctx.beginPath();
     ctx.arc(0, 0, radius * 0.01, 0, 2 * Math.PI);
     ctx.fillStyle = '#fff';
     ctx.fill();
-}
-
-function drawNumbers(ctx, radius) {
-    let ang;
-    let num;
-    ctx.font = radius * 0.2 + "px verdana";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "center";
-    for (num = 1; num < 7; num++) {
-        ang = num * Math.PI / 3;
-        ctx.rotate(ang);
-        ctx.translate(0, -radius * 0.8);
-        ctx.rotate(-ang);
-        ctx.fillText((num*2).toString()+"0", 0, 0);
-        ctx.rotate(ang);
-        ctx.translate(0, radius * 0.8);
-        ctx.rotate(-ang);
-    }
 }
 
 function drawTicks(ctx, radius) {
@@ -160,13 +134,8 @@ function drawTicks(ctx, radius) {
         
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        // if (num % 5 === 0) {
-        //     ctx.lineTo(0, radius * 0.1);
-        //     ctx.lineWidth = 6;
-        // } else {
         ctx.lineTo(0, radius * 0.2);
         ctx.lineWidth = 0.75;
-        // }
         ctx.stroke();
         
         ctx.translate(0, radius * 0.99);
@@ -176,24 +145,8 @@ function drawTicks(ctx, radius) {
 
 function drawTime(ctx, radius, minutes) {
     const hourPos = Math.PI * 2 * Math.min(120, minutes)/120;
-    // drawHand(ctx, hourPos, radius * 0.8, radius * 0.03);
     drawBackgroundArc(ctx, Math.PI*1.5, hourPos - Math.PI / 2, radius);
 }
-
-function drawHand(ctx, pos, length, width, color = '#333') {
-    ctx.beginPath();
-    ctx.lineWidth = width;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = color;
-    ctx.moveTo(0, 0);
-    ctx.rotate(pos);
-    ctx.lineTo(0, -length);
-    ctx.stroke();
-    ctx.rotate(-pos);
-}
-
-
-
 
 
 createApp({
