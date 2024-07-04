@@ -230,14 +230,91 @@ class Manifest:
         await asyncio.sleep(0.5)
         await self._dev.unsubscribe(self._on_data)
         await asyncio.sleep(0.5)
+class DiveLog:
+    def __init__(self, dev: BLEShearwater):
+        self._dev = dev
+        self._is_acked = False
+        self._accumulator = bytearray()
+        self._items = []
+        self._has_reached_end = False
+        self._is_new_data = False
+
+    async def _send_data(self, data: bytes):
+        self._is_new_data = False
+        await self._dev.send_data(data)
+
+    async def wait_for_new_data(self):
+        while not self._is_new_data:
+            await asyncio.sleep(0.1)
+
+    def _on_data(self, data: bytes):
+        print(f"received data: {data.hex()}")
+        is_ack = bytes.fromhex("01ff0400751092") in data
+        if is_ack:
+            self._is_acked = True
+            self._is_new_data = True
+            return
+        headless_data = data[2:]
+        self._accumulator += headless_data
+        if self._accumulator[-1] == END_OF_FRAME:
+            self._is_new_data = True
+            # self.decode_manifests()
+            self._accumulator = bytearray()
+            self._has_reached_end = (
+                self._has_reached_end or bytes([0, 0, 0, 0, 0, 0, 0]) in data
+            )
+
+    def decode_manifests(self):
+        def extract_manifests(data: bytes) -> list[bytes]:
+            payload = data[6:]
+            manifests = [payload[i : i + 32] for i in range(0, len(payload), 32)]
+            all_ok = [True for m in manifests if m[0] == 0xA5 and m[1] == 0xC4]
+            if not all_ok:
+                raise Exception("Not all manifests start with 0xa5 0xc4")
+            return manifests
+
+        data = self._accumulator
+        is_packet_ok = data[0:2] == bytes([0x01, 0xFF]) and data[3:4] == bytes([0x00])
+        if not is_packet_ok:
+            raise Exception(f"Invalid packet: {data.hex()}")
+        decoded = slip_decode(data)
+        if not decoded:
+            raise Exception(f"Failed to decode: {data.hex()}")
+        manifests = extract_manifests(decoded)
+        for manifest in manifests:
+            self._items.append(decode_manifest(manifest))
+
+    async def read(self, address: bytes):
+        await self._dev.subscribe(self._on_data)
+        await self._send_data(bytes([0x35, 0x10, 0x34, *address]))
+        while not self._is_acked:
+            await asyncio.sleep(0.1)
+        block_num = 1
+        while not self._has_reached_end:
+            await self._send_data(bytes([0x36, block_num]))
+            await self.wait_for_new_data()
+            block_num += 1
+        await asyncio.sleep(0.5)
+        await self._dev.unsubscribe(self._on_data)
+        await asyncio.sleep(0.5)
 
 
 async def main():
     dev = BLEShearwater()
-    man = Manifest(dev)
-    await man.read()
-    print(json.dumps(man._manifests, indent=2))
-
+    # man = Manifest(dev)
+    # await man.read_manifest()
+    dlog = DiveLog(dev)
+    await dlog.read(bytes([0x80,0x06,0xca,0x00]))
+    # print(json.dumps(dlog._items, indent=2))
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # asyncio.run(main())
+    p = "7601887fdbdc31594554033100c3dbdc303b2d03d71500d1b05938a82e03ff00c56515500cc4030f8adbdced340e1d0207a9964d319b804c5a06098a80618019455607e4d76933"
+    b = bytes.fromhex(p)
+    buffer = bytearray()
+    binary = b
+    # for byte in b:
+    #     check_bit = byte & 0x80
+    #     if check_bit:
+            
+    #     # print()
