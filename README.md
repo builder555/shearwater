@@ -37,7 +37,7 @@ Response: 010001ff0d00628021018000000000020080c0
 
 
 ### TODO
-- [ ] Figure out proper decoding algorithm
-- [ ] Clean up send/receive loop
+- [x] Figure out proper decoding algorithm
+- [x] Clean up send/receive loop
 - [ ] Put message hex in vars
 - [ ] Check messages against actual logs
