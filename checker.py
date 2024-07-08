@@ -13,9 +13,9 @@ SERVICE_UUID = "FE25C237-0ECE-443C-B0AA-E02033E7029D"
 CHARACTERISTIC_UUID = "27B7570B-359E-45A3-91BB-CF7E70049BD2"
 
 
-def slip_decode(data):
+def slip_decode(data: bytes):
     if data is None or len(data) < 1:
-        return None
+        raise Exception("No data")
 
     decoded_data = bytearray(len(data))
     decoded_data_index = 0
@@ -39,7 +39,7 @@ def slip_decode(data):
             decoded_data[decoded_data_index] = data[i]
             decoded_data_index += 1
         i += 1
-    return None
+    raise Exception("Invalid data")
 
 
 def slip_encode(data):
@@ -104,6 +104,7 @@ class BLEShearwater:
             raise DeviceNotConnected
         prepend = bytes([0x01, 0x00, 0xFF, 0x01, len(data) + 1, 0x00])
         encoded = slip_encode(prepend + data)
+        print('sending: ', encoded.hex(sep=" "))
         await self._client.write_gatt_char(CHARACTERISTIC_UUID, encoded)
 
     async def close_connection(self):
@@ -114,9 +115,15 @@ class BLEShearwater:
         await self._client.disconnect()
 
 
+def get_num(data: bytes):
+    return int.from_bytes(data, byteorder="big")
+
+depth_units = {
+    0: "meters",
+    1: "feet",
+}
+
 def decode_manifest(data: bytes):
-    def get_num(data: bytes):
-        return int.from_bytes(data, byteorder="big")
 
     def get_date(timestamp: int):
         # shearwater does not have a concept of timezones, so it shows as UTC
@@ -129,10 +136,6 @@ def decode_manifest(data: bytes):
             timestamp, tz=datetime.timezone.utc
         ).strftime("%Hh %Mm %Ss")
 
-    depth_units = {
-        0: "meters",
-        1: "feet",
-    }
     computer_mode = {
         0: "CC/BO",
         1: "OC Tec",
@@ -168,7 +171,7 @@ class Manifest:
         self._dev = dev
         self._is_acked = False
         self._accumulator = bytearray()
-        self._manifests = []
+        self._items = []
         self._has_reached_end = False
         self._is_new_data = False
 
@@ -215,7 +218,7 @@ class Manifest:
             raise Exception(f"Failed to decode: {data.hex()}")
         manifests = extract_manifests(decoded)
         for manifest in manifests:
-            self._manifests.append(decode_manifest(manifest))
+            self._items.append(decode_manifest(manifest))
 
     async def read(self):
         await self._dev.subscribe(self._on_data)
@@ -230,6 +233,7 @@ class Manifest:
         await asyncio.sleep(0.5)
         await self._dev.unsubscribe(self._on_data)
         await asyncio.sleep(0.5)
+
 class DiveLog:
     def __init__(self, dev: BLEShearwater):
         self._dev = dev
@@ -245,7 +249,7 @@ class DiveLog:
 
     async def wait_for_new_data(self):
         while not self._is_new_data:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
 
     def _on_data(self, data: bytes):
         print(f"received data: {data.hex()}")
@@ -259,10 +263,10 @@ class DiveLog:
         if self._accumulator[-1] == END_OF_FRAME:
             self._is_new_data = True
             # self.decode_manifests()
-            self._accumulator = bytearray()
             self._has_reached_end = (
-                self._has_reached_end or bytes([0, 0, 0, 0, 0, 0, 0]) in data
+                self._has_reached_end or bytes([0, 0, 0, 0, 0, 0, 0, 0]) == self._accumulator[-9:-1]
             )
+            self._accumulator = bytearray()
 
     def decode_manifests(self):
         def extract_manifests(data: bytes) -> list[bytes]:
@@ -294,27 +298,299 @@ class DiveLog:
             await self._send_data(bytes([0x36, block_num]))
             await self.wait_for_new_data()
             block_num += 1
-        await asyncio.sleep(0.5)
+        await self._send_data(bytes([0x37]))
+        await asyncio.sleep(1)
         await self._dev.unsubscribe(self._on_data)
         await asyncio.sleep(0.5)
 
-
-async def main():
+async def get_manifest():
     dev = BLEShearwater()
-    # man = Manifest(dev)
-    # await man.read_manifest()
+    man = Manifest(dev)
+    await man.read()
+    print(json.dumps(man._items, indent=2))
+
+async def get_a_dive():
+    dev = BLEShearwater()
     dlog = DiveLog(dev)
-    await dlog.read(bytes([0x80,0x06,0xca,0x00]))
-    # print(json.dumps(dlog._items, indent=2))
+    await dlog.read(bytes([0x80,0x07,0x9e,0x20]))
+
+def hex_to_bin(hex_str: str) -> str:
+    nums = [int(hex_str[i:i+2], 16) for i in range(0, len(hex_str), 2)]
+    bin_array = [bin(num)[2:].zfill(8) for num in nums]
+    return "".join(bin_array)
+
+def xor_blocks(b1: bytes, b2: bytes) -> bytes:
+    return bytes([b1[i] ^ b2[i] for i in range(min(len(b1), len(b2)))])
+
+def convert_packets_to_runs(packet):
+    # convert to an array of bits:
+    bits_string = hex_to_bin(packet)
+    # r-pad with zeros to make it divisible by 9
+    # missing_zeros = 9 - (len(bits_string) % 9)
+    # print(f"missing zeros: {missing_zeros}")
+    # bits_string += "0" * missing_zeros
+    # chunk it into 9-bit chunks
+    chunks = [bits_string[i:i+9] for i in range(0, len(bits_string), 9)]
+    return chunks
+
+def expand_into_runs(chunks):
+    # expand the chunks into runs
+    runs = ""
+    for chunk in chunks:
+        determiner = chunk[0]
+        if determiner == "1":
+            runs += chunk[1:]
+        else:
+            number = int(chunk[1:],2)
+            runs += "0" * 8 * number
+    return runs
+
+def bin_to_bytes(bin_str: str) -> bytes:
+    data = bytes([int(runs[i:i+8],2) for i in range(0, len(runs), 8)])
+    output = bytearray(data[:32])
+    for i in range(32, len(data), 32):
+        next_block = xor_blocks(data[i:i+32], output[-32:])
+        output += next_block
+    return output
+
+def is_open_record(data: bytes) -> bool:
+    return data[0:2] == bytes([0x10, 0xFF])
+class LogDecoder:
+    def __init__(self, data: bytes):
+        self._data = data
+        self.__decoders = {
+            0x10: self.decode_open_record_10,
+            0x11: self.decode_open_record_11,
+            0x12: self.decode_open_record_12,
+            0x13: self.decode_open_record_13,
+            0x14: self.decode_open_record_14,
+            0x15: self.decode_open_record_15,
+            0x16: self.decode_open_record_16,
+            0x17: self.decode_open_record_17,
+            0x01: self.decode_log_record,
+            0xff: self.decode_final_record
+        }
+
+    def decode(self):
+        record_type = self._data[0]
+        if record_type not in self.__decoders:
+            return hex(record_type) #record type in hex 
+        return self.__decoders[record_type](self._data)
+
+    def decode_open_record_10(self, data: bytes):
+        return {
+            "dive_number":  get_num(data[2:4]),
+            "gf_low": get_num(data[4:5]),
+            "gf_high": get_num(data[5:6]),
+            "tts": get_num(data[6:8]),
+            "depth_units": depth_units[get_num(data[8:9])],
+            "battery_voltage_x10": get_num(data[9:10]),
+            "cns": get_num(data[10:12]),
+            "dive_start": get_num(data[12:16]),
+            "o2_status": get_num(data[16:17]),
+            "ppo2_low_x100": get_num(data[17:18]),
+            "ppo2_high_x100": get_num(data[18:19]),
+            "firmware_version": get_num(data[19:20]),
+            "gas_0_oc_o2": get_num(data[20:21]),
+            "gas_1_oc_o2": get_num(data[21:22]),
+            "gas_2_oc_o2": get_num(data[22:23]),
+            "gas_3_oc_o2": get_num(data[23:24]),
+            "gas_4_oc_o2": get_num(data[24:25]),
+            "gas_0_cc_o2": get_num(data[25:26]),
+            "gas_1_cc_o2": get_num(data[26:27]),
+            "gas_2_cc_o2": get_num(data[27:28]),
+            "gas_3_cc_o2": get_num(data[28:29]),
+            "gas_4_cc_o2": get_num(data[29:30]),
+            "gas_0_oc_he": get_num(data[30:31]),
+            "gas_1_oc_he": get_num(data[31:32]),
+        }
+
+    def decode_open_record_11(self, data: bytes):
+        return {
+            "gas_2_oc_he": get_num(data[1:2]),
+            "gas_3_oc_he": get_num(data[2:3]),
+            "gas_4_oc_he": get_num(data[3:4]),
+            "gas_0_cc_he": get_num(data[4:5]),
+            "gas_1_cc_he": get_num(data[5:6]),
+            "gas_2_cc_he": get_num(data[6:7]),
+            "gas_3_cc_he": get_num(data[7:8]),
+            "gas_4_cc_he": get_num(data[8:9]),
+            "ccr_auto_sp_switch_up_lo_hi": get_num(data[9:10]), # 0 - manual, 1 - auto
+            "ccr_auto_sp_switch_up_depth": get_num(data[10:11]),
+            "ccr_auto_sp_switch_up_hi_lo": get_num(data[11:12]), # 0 - manual, 1 - auto
+            "ccr_auto_sp_switch_down_depth": get_num(data[12:13]),
+            "is_single_ppo2_sensor": get_num(data[13:14]), #0 - 3 sensor, 1 - 1 sensor
+            "gf_low": get_num(data[14:15]), #duplicate
+            "gf_high": get_num(data[15:16]), #duplicate
+            "surface_pressure_mbars": get_num(data[16:18]),
+            "serial_number": data[18:22].hex(),
+        }
+
+    def decode_open_record_12(self, data: bytes):
+        return {
+            "error_flags_0": get_num(data[1:5]),
+            "error_flags_1": get_num(data[5:9]),
+            "error_acks_0": get_num(data[9:13]),
+            "error_acks_1": get_num(data[13:17]),
+            "deco_model": get_num(data[18:19]), # 0=GF, 1=VPM-B, 2=VPMB-B/GFS, 3=DCIEM
+            "vpm_b_conservatism": get_num(data[19:20]),
+            "solenoid_depth_compensation": get_num(data[20:21]), # DEPRECATED
+            "oc_min_ppo2_x100": get_num(data[21:22]),
+            "oc_max_ppo2_x100": get_num(data[22:23]),
+            "oc_deco_ppo2_x100": get_num(data[23:24]),
+            "cc_min_ppo2_x100": get_num(data[24:25]),
+            "cc_max_ppo2_x100": get_num(data[25:26]),
+            "sensor_display": get_num(data[26:27]), # SC only: 0=ppo2, 1=FiO2, 2=both
+            "last_stop_depth": get_num(data[28:29]),
+            "end_dive_delay": get_num(data[29:31]),
+            "clock_format": get_num(data[31:32]), #0=24hr, 1=AM/PM
+        }
+    def decode_open_record_13(self, data: bytes):
+        return {
+            "title_color": get_num(data[1:2]), # 1=green 4=blue, 8=cyan, 9=gray
+            "show_ppo2_in_oc_mode": get_num(data[2:3]),
+            "salinity": get_num(data[3:5]), #in kg/m^3
+            "gfs_value": get_num(data[5:6]),
+            "calibration_status": get_num(data[6:7]), # bit 0: sensor 1, bit 1: sensor 2, bit 2: sensor 3
+            "sensor_1_calibration": get_num(data[7:9]),
+            "sensor_2_calibration": get_num(data[9:11]),
+            "sensor_3_calibration": get_num(data[11:13]),
+            "sensor_1_adc_offset": get_num(data[13:14]),
+            "sensor_2_adc_offset": get_num(data[14:15]),
+            "sensor_3_adc_offset": get_num(data[15:16]),
+            "rMS_temp_sticks_enabled": get_num(data[16:17]),
+            "rMS warmup_flags": get_num(data[17:18]),
+            "rMS_ready_flags": get_num(data[18:19]),
+            "rMS_scrubber_rate": get_num(data[19:20]), # 0=unknown, 1=surface disconnect, 2=dive disconnect, 3=pre-warm, 4=warm, 5=ready, 255=off
+            "current_RCT": get_num(data[20:22]),
+            "current_RST": get_num(data[22:24]),
+        }
+    def decode_open_record_14(self, data: bytes):
+        return {
+            "computer_mode": get_num(data[1:2]), # 0=cc/bo, 1=oc tec, 2=gauge, 3=ppo2 display, 4=sc/bo, 5=cc/bo 2, 6=oc rec, 7=freedive
+            "revo2_co2_temp_gender": get_num(data[2:3]),
+            "co2_temp_weight": get_num(data[3:5]),
+            "battery_voltage_x100": get_num(data[5:7]),
+            "battery_gauge_available": get_num(data[7:8]),
+            "battery_percent_remain": get_num(data[8:9]),
+            "battery_type": get_num(data[9:10]), #1=1.5V alkaline, 2=1.5V lithum, 3=1.2V NiMH, 4=3.6V Saft, 5=3.7V Li-Ion
+            "battery_setting": get_num(data[10:11]), #0=auto, 1=1.5V alkaline, 2=1.5V lithum, 3=1.2V NiMH, 4=3.6V Saft, 5=3.7V Li-Ion
+            "battery_warning_level_x100": get_num(data[11:13]),
+            "battery_critical_level_x100": get_num(data[13:15]),
+            "log_version": get_num(data[16:17]),
+            "gas_states": get_num(data[17:19]), #bit set for corresponding gas when on
+            "temp_units": get_num(data[19:20]), # 0=v33 and before, 2=C, 3=F
+            "error_flags_2": get_num(data[20:24]),
+            "error_acks_2": get_num(data[24:28]),
+            "ai_mode": get_num(data[28:29]), # 0=not used, 1=T1, 2=T2, 3=both
+            "gtr_mode": get_num(data[29:30]), # 0=not used, 1=T1, 2=T2, 3=both
+            "ai_units": get_num(data[30:31]), # 0=psi/cu.ft, 1=Bar/L
+        }
+
+    def decode_open_record_15(self, data: bytes):
+        languages = [
+            "English", "Chinese", "Japanese", "Korean", "Russian", "French", "German", "Spanish", "Italian", "Traditional Chinese", "Portuguese", "Polish"
+        ]
+        return {
+            "ai_t1_serial": data[1:4].hex(),
+            "ai_t1_max_psi": get_num(data[6:8]),
+            "ai_t1_reserve_psi": get_num(data[8:10]),
+            "ai_t2_serial": data[10:13].hex(),
+            "ai_t2_max_psi": get_num(data[15:17]),
+            "ai_t2_reserve_psi": get_num(data[17:19]),
+            "log_sample_rate_ms": get_num(data[23:25]),
+            "expected_log_sample_format": get_num(data[25:26]), #0x01=normal, 0x02=freedive
+            "timezone_offset": get_num(data[26:30]),
+            "dst": get_num(data[30:31]), #0=dst off, 1=dst on
+            "language": languages[get_num(data[31:32])], 
+        }
+    
+    def decode_open_record_16(self, data: bytes):
+        return {
+            "total_stack_time": get_num(data[1:3]),
+            "remaining_stack_time": get_num(data[3:5]),
+            "sub_mode_oc_rec": get_num(data[5:6]), #0=3 Gas Nitrox, 1=air, 2=nitrox, 3=oc rec(legacy)
+            "total_on_time": get_num(data[6:10]),
+            "depth_alert": get_num(data[10:13]), #offset 10: enabled, offset 11-12: value in ft x10
+            "time_alert": get_num(data[13:16]), #offset 13: enabled, offset 14-15: value in minutes
+            "low_ndl_alert": get_num(data[16:19]), #offset 16: enabled, offset 17-18: value in minutes
+            "ai_t1_on": get_num(data[19:20]), 
+            "ai_t1_name": data[20:22].hex(),
+            "ai_t2_on": get_num(data[22:23]),
+            "ai_t2_name": data[23:25].hex(),
+            "ai_t3_serial": data[25:28].hex(),
+            "ai_t3_max_psi": get_num(data[28:30]),
+            "ai_t3_reserve_psi": get_num(data[30:32]),
+        }
+
+    def decode_open_record_17(self, data: bytes):
+        return {
+            "ai_t3_on": get_num(data[1:2]),
+            "ai_t3_name": data[2:4].hex(),
+            "ai_t4_serial": data[4:7].hex(),
+            "ai_t4_max_psi": get_num(data[7:9]),
+            "ai_t4_reserve_psi": get_num(data[9:11]),
+            "ai_t4_on": get_num(data[11:12]),
+            "ai_t4_name": data[12:14].hex(),
+            "ai_sidemount_switch_psi": data[14:16].hex(),
+            "error_flags_3": get_num(data[16:20]),
+            "error_acks_3": get_num(data[20:24]),
+            "extended_dive_samples_in_log": get_num(data[24:25]), # 0x00 = not present, 0xE1 = E1 samples are present
+        }
+
+    def decode_log_record(self, data: bytes):
+        return {
+            "depth": get_num(data[1:3]),
+            "next_stop_depth": get_num(data[3:5]),
+            "tts": get_num(data[5:7]),
+            "avg_ppo2": get_num(data[7:8]),
+            "o2_percent": get_num(data[8:9]),
+            "he_percent": get_num(data[9:10]),
+            "next_stop_or_ndl_time": get_num(data[10:11]),
+            "battery_percent_remaining": get_num(data[11:12]),
+            "statuses": get_num(data[12:13]),
+            "o2_sensor_1_mv": get_num(data[13:14]),
+            "water_temp": get_num(data[14:15]),
+            "o2_sensor_2_mv": get_num(data[15:16]),
+            "o2_sensor_3_mv": get_num(data[16:17]),
+            "battery_voltage_x100": get_num(data[17:19]),
+            "ppo2_setpoint": get_num(data[19:20]),
+            "ai_t2_data": get_num(data[20:22]),
+            "gtr": get_num(data[22:23]),
+            "cns": get_num(data[23:24]),
+            "deco_ceiling": get_num(data[24:25]),
+            "gf99": get_num(data[25:26]),
+            "at_plus_5": get_num(data[26:28]),
+            "ai_t1_data": get_num(data[28:30]),
+            "sac": get_num(data[30:32]), #in psi/min
+        }
+    def decode_final_record(self, data: bytes):
+        products = ["Pursuit", None, "Predator", "Petrel", "Nerd", "Perdix", "Perdix AI", "Nerd 2", "Teric", "Peregrine", "Petrel 3", "Perdix 2"]
+        return {
+            "serial_number": data[2:6].hex(),
+            "checksum": get_num(data[9:10]),
+            "firmware_version": get_num(data[10:11]),
+            "log_version": get_num(data[12:13]),
+            "product": products[get_num(data[13:14])],
+        }
 
 if __name__ == "__main__":
-    # asyncio.run(main())
-    p = "7601887fdbdc31594554033100c3dbdc303b2d03d71500d1b05938a82e03ff00c56515500cc4030f8adbdced340e1d0207a9964d319b804c5a06098a80618019455607e4d76933"
-    b = bytes.fromhex(p)
-    buffer = bytearray()
-    binary = b
-    # for byte in b:
-    #     check_bit = byte & 0x80
-    #     if check_bit:
-            
-    #     # print()
+    asyncio.run(get_a_dive())
+    exit()
+    # accumulator = bytearray()
+    # packet = ""
+    # blocks = []
+    # for p in packets:
+    #     accumulator += bytes.fromhex(p)[2:]
+    #     if accumulator[-1] == END_OF_FRAME:
+    #         blocks.append(slip_decode(accumulator[6:]).hex())
+    #         packet += blocks[-1]
+    #         accumulator = bytearray()
+    
+    # chunks = convert_packets_to_runs(packet)
+    # runs = expand_into_runs(chunks)
+    # output = bin_to_bytes(runs)
+    # for rec in range(0, len(output), 32):
+    #     print(LogDecoder(output[rec:rec+32]).decode())
+    # # print("\n",output.hex())
+    
