@@ -314,50 +314,14 @@ async def get_a_dive():
     dlog = DiveLog(dev)
     await dlog.read(bytes([0x80,0x07,0x9e,0x20]))
 
-def hex_to_bin(hex_str: str) -> str:
-    nums = [int(hex_str[i:i+2], 16) for i in range(0, len(hex_str), 2)]
-    bin_array = [bin(num)[2:].zfill(8) for num in nums]
-    return "".join(bin_array)
-
 def xor_blocks(b1: bytes, b2: bytes) -> bytes:
     return bytes([b1[i] ^ b2[i] for i in range(min(len(b1), len(b2)))])
 
-def convert_packets_to_runs(packet):
-    # convert to an array of bits:
-    bits_string = hex_to_bin(packet)
-    # r-pad with zeros to make it divisible by 9
-    # missing_zeros = 9 - (len(bits_string) % 9)
-    # print(f"missing zeros: {missing_zeros}")
-    # bits_string += "0" * missing_zeros
-    # chunk it into 9-bit chunks
-    chunks = [bits_string[i:i+9] for i in range(0, len(bits_string), 9)]
-    return chunks
-
-def expand_into_runs(chunks):
-    # expand the chunks into runs
-    runs = ""
-    for chunk in chunks:
-        determiner = chunk[0]
-        if determiner == "1":
-            runs += chunk[1:]
-        else:
-            number = int(chunk[1:],2)
-            runs += "0" * 8 * number
-    return runs
-
-def bin_to_bytes(bin_str: str) -> bytes:
-    data = bytes([int(runs[i:i+8],2) for i in range(0, len(runs), 8)])
-    output = bytearray(data[:32])
-    for i in range(32, len(data), 32):
-        next_block = xor_blocks(data[i:i+32], output[-32:])
-        output += next_block
-    return output
-
 def is_open_record(data: bytes) -> bool:
     return data[0:2] == bytes([0x10, 0xFF])
+
 class LogDecoder:
-    def __init__(self, data: bytes):
-        self._data = data
+    def __init__(self):
         self.__decoders = {
             0x10: self.decode_open_record_10,
             0x11: self.decode_open_record_11,
@@ -368,14 +332,22 @@ class LogDecoder:
             0x16: self.decode_open_record_16,
             0x17: self.decode_open_record_17,
             0x01: self.decode_log_record,
+            0x20: self.decode_close_record_20,
+            0x21: self.decode_close_record_21,
+            0x22: self.decode_close_record_22,
+            0x23: self.decode_close_record_21,
+            0x24: self.decode_close_record_21,
+            0x25: self.decode_close_record_25,
+            0x26: self.decode_close_record_26,
+            0x27: self.decode_close_record_27,
             0xff: self.decode_final_record
         }
 
-    def decode(self):
-        record_type = self._data[0]
+    def decode(self, data: bytes):
+        record_type = data[0]
         if record_type not in self.__decoders:
-            return hex(record_type) #record type in hex 
-        return self.__decoders[record_type](self._data)
+            return data.hex() #record type in hex 
+        return self.__decoders[record_type](data)
 
     def decode_open_record_10(self, data: bytes):
         return {
@@ -383,7 +355,7 @@ class LogDecoder:
             "gf_low": get_num(data[4:5]),
             "gf_high": get_num(data[5:6]),
             "tts": get_num(data[6:8]),
-            "depth_units": depth_units[get_num(data[8:9])],
+            "depth_units": get_num(data[8:9]),
             "battery_voltage_x10": get_num(data[9:10]),
             "cns": get_num(data[10:12]),
             "dive_start": get_num(data[12:16]),
@@ -445,6 +417,7 @@ class LogDecoder:
             "end_dive_delay": get_num(data[29:31]),
             "clock_format": get_num(data[31:32]), #0=24hr, 1=AM/PM
         }
+
     def decode_open_record_13(self, data: bytes):
         return {
             "title_color": get_num(data[1:2]), # 1=green 4=blue, 8=cyan, 9=gray
@@ -465,6 +438,7 @@ class LogDecoder:
             "current_RCT": get_num(data[20:22]),
             "current_RST": get_num(data[22:24]),
         }
+
     def decode_open_record_14(self, data: bytes):
         return {
             "computer_mode": get_num(data[1:2]), # 0=cc/bo, 1=oc tec, 2=gauge, 3=ppo2 display, 4=sc/bo, 5=cc/bo 2, 6=oc rec, 7=freedive
@@ -538,6 +512,51 @@ class LogDecoder:
             "extended_dive_samples_in_log": get_num(data[24:25]), # 0x00 = not present, 0xE1 = E1 samples are present
         }
 
+    def decode_close_record_20(self, data: bytes):
+        decoded = self.decode_open_record_10(data)
+        del decoded['gf_low']
+        del decoded['gf_high']
+        del decoded['tts']
+        del decoded['depth_units']
+        del decoded['dive_start']
+        decoded['max_depth_x10'] = get_num(data[4:6])
+        decoded['dive_length'] = get_num(data[6:9])
+        decoded['dive_end'] = get_num(data[12:16])
+        return decoded
+
+    def decode_close_record_21(self, data: bytes):
+        decoded = self.decode_open_record_11(data)
+        decoded['max_descent_rate'] = get_num(data[22:24])
+        decoded['avg_descent_rate'] = get_num(data[24:26])
+        decoded['max_ascent_rate'] = get_num(data[26:28])
+        decoded['avg_ascent_rate'] = get_num(data[28:30])
+        return decoded
+
+    def decode_close_record_22(self, data: bytes):
+        return self.decode_open_record_12(data)
+
+    def decode_close_record_23(self, data: bytes):
+        decoded = self.decode_open_record_13(data)
+        decoded['min_rct'] = get_num(data[24:26])
+        decoded['dive_time_with_min_rct'] = get_num(data[26:28])
+        decoded['min_rst'] = get_num(data[28:30])
+        decoded['dive_time_with_min_rst'] = get_num(data[30:32])
+        return decoded
+    
+    def decode_close_record_24(self, data: bytes):
+        return self.decode_open_record_14(data)
+    
+    def decode_close_record_25(self, data: bytes):
+        decoded = self.decode_open_record_15(data)
+        decoded['last_avg_sac_x100'] = get_num(data[19:23])
+        return decoded
+
+    def decode_close_record_26(self, data: bytes):
+        return self.decode_open_record_16(data)
+
+    def decode_close_record_27(self, data: bytes):
+        return self.decode_open_record_17(data)
+
     def decode_log_record(self, data: bytes):
         return {
             "depth": get_num(data[1:3]),
@@ -564,6 +583,7 @@ class LogDecoder:
             "ai_t1_data": get_num(data[28:30]),
             "sac": get_num(data[30:32]), #in psi/min
         }
+
     def decode_final_record(self, data: bytes):
         products = ["Pursuit", None, "Predator", "Petrel", "Nerd", "Perdix", "Perdix AI", "Nerd 2", "Teric", "Peregrine", "Petrel 3", "Perdix 2"]
         return {
@@ -574,23 +594,73 @@ class LogDecoder:
             "product": products[get_num(data[13:14])],
         }
 
+def expand_to_runs(binary_chunks: list[str]) -> bytes:
+    runs = bytearray()
+    for chunk in binary_chunks:
+        determiner = chunk[0]
+        payload = int(chunk[1:],2)
+        if determiner == "1":
+            runs.append(payload)
+        else:
+            runs += bytes([0] * payload)
+    return runs
+
+def packets_to_9bit_bin_chunks(data: bytes) -> list[str]:
+    bin_array = [bin(b)[2:].zfill(8) for b in data]
+    bits_string = "".join(bin_array)
+    chunks = [bits_string[i:i+9] for i in range(0, len(bits_string), 9)]
+    return chunks
+
+class LogReader:
+    def __init__(self):
+        self.__raw_accumulator = bytearray()
+        self.__subscribers = []
+        self.__runs = bytearray()
+        self.__last_log = bytes([0]*32)
+
+    def subscribe(self, callback: Callable):
+        self.__subscribers.append(callback)
+    
+    def unsubscribe(self, callback: Callable):
+        self.__subscribers.remove(callback)
+
+    def __notify_subs(self, logs: list[bytes]):
+        for callback in self.__subscribers:
+            for log in logs:
+                callback(log)
+
+    def __extract_logs(self, packet: bytes) -> list[bytes]:
+        chunks = packets_to_9bit_bin_chunks(packet) # data always comes in 144 bytes
+        self.__runs += expand_to_runs(chunks) # runs can vary in size
+        logs: list[bytes] = []
+        while len(self.__runs) >= 32:
+            encoded_block = self.__runs[:32]
+            self.__runs = self.__runs[32:]
+            log_entry = xor_blocks(encoded_block, self.__last_log)
+            self.__last_log = log_entry
+            logs.append(log_entry)
+        return logs
+    
+    def data_arrived(self, data: bytes):
+        self.__raw_accumulator += data[2:]
+        if self.__raw_accumulator[-1] == END_OF_FRAME:
+            decoded = slip_decode(self.__raw_accumulator[6:])
+            self.__raw_accumulator = bytearray()
+            logs = self.__extract_logs(decoded)
+            self.__notify_subs(logs)
+
 if __name__ == "__main__":
-    asyncio.run(get_a_dive())
-    exit()
-    # accumulator = bytearray()
-    # packet = ""
-    # blocks = []
-    # for p in packets:
-    #     accumulator += bytes.fromhex(p)[2:]
-    #     if accumulator[-1] == END_OF_FRAME:
-    #         blocks.append(slip_decode(accumulator[6:]).hex())
-    #         packet += blocks[-1]
-    #         accumulator = bytearray()
+    # asyncio.run(main())
+    # exit()
+    packets = []
+    def decodeprint(packet):
+        decoder = LogDecoder()
+        print(decoder.decode(packet))
     
-    # chunks = convert_packets_to_runs(packet)
-    # runs = expand_into_runs(chunks)
-    # output = bin_to_bytes(runs)
-    # for rec in range(0, len(output), 32):
-    #     print(LogDecoder(output[rec:rec+32]).decode())
-    # # print("\n",output.hex())
-    
+    reader = LogReader()
+    reader.subscribe(decodeprint)
+    packet = ""
+    blocks = []
+    accumulator = bytearray()
+    for p in packets:
+        reader.data_arrived(bytes.fromhex(p))
