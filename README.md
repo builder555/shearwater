@@ -2,6 +2,7 @@
 
 ### Findings so far:
 
+* Shearwater uses [UDS protocol](https://en.wikipedia.org/wiki/Unified_Diagnostic_Services)
 * A received message is always prepended with one of: 
     * 0x01 0x00 
     * 0x02 0x00
@@ -36,8 +37,8 @@ Response: 010001ff0400751082c0
 Request:  01 00 ff 01 03 00 36 01 c0
 Response: 020001ff83007601a5c4001a665314ce66531a470000057e0089001b0007a5000007bf4000020602a5c40019665314056653143b0000003b0024001a00079e200007a32000020602a5c4001865
 Response: 020145033b6545104a00000d140084001900075020000788dbdc00020602a5c400176544f35c6544f8d700000580008700180007300000074a8000020602c0
-# Keep sending  01 00 ff 01 03 00 36 XX c0 where XX is subsequent blocks (02, 03, etc.)
-# until you get a message that ends with 000000000000000000000000000000000000000000c0
+# Keep sending 01 00 ff 01 03 00 36 XX c0 where XX is subsequent blocks (02, 03, etc.) until you reach block 12 (0x0C)
+# at this point send 01 00 ff 01 02 00 37 c0 to complete the transfer
 ```
 
 ```shell
