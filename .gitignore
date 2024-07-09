@@ -1,2 +1,4 @@
 .vscode
 .DS_Store
+dummy_data.py
+__pycache__
