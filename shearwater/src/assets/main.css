@@ -1,0 +1,35 @@
+@import './base.css';
+body {
+  background: linear-gradient(180deg, #70879f, #00314a);
+  background-repeat: no-repeat;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+}
+.align-right{
+  text-align: right;
+}
+.center {
+  justify-content: center;
+  text-align: center;
+}
+
+button {
+  transition:
+    background-color 0.1s linear,
+    border-color 0.1s linear,
+    color 0.1s linear,
+    box-shadow 0.1s linear,
+    transform 0.1s ease;
+  transition:
+    background-color var(--animation-duration) linear,
+    border-color var(--animation-duration) linear,
+    color var(--animation-duration) linear,
+    box-shadow var(--animation-duration) linear,
+    transform var(--animation-duration) ease;
+}

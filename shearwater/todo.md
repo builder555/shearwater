@@ -1,0 +1,297 @@
+
+- [x] remove dark square from background
+- [x] add proper header:
+    - When Connected:
+        - [x] display device name
+        - [x] number of available dives
+    - When not connected:
+        - [x] Button to connect
+    - When BT not available:
+        - [x] message to enable web bluetooth
+- [x] activate the "connect" button
+- [ ] add downloader/reader log classes to JS
+- [ ] find a charting library
+
+- [ ] display charts for a dive:
+    - [ ] depth
+    - [ ] next_stop_depth
+    - [ ] tts
+    - [ ] avg_ppo2
+    - [ ] o2_percent
+    - [ ] he_percent
+    - [ ] next_stop_or_ndl_time
+    - [ ] battery_percent_remaining
+    - [ ] statuses
+    - [ ] o2_sensor_1_mv
+    - [ ] water_temp
+    - [ ] o2_sensor_2_mv
+    - [ ] o2_sensor_3_mv
+    - [ ] battery_voltage_x100
+    - [ ] ppo2_setpoint
+    - [ ] ai_t2_data
+    - [ ] gtr
+    - [ ] cns
+    - [ ] deco_ceiling
+    - [ ] gf99
+    - [ ] at_plus_5
+    - [ ] ai_t1_data
+    - [ ] sac
+
+- [ ] display data for a dive:
+    - [ ] opening record:
+        - [ ] dive_number
+        - [ ] gf_low
+        - [ ] gf_high
+        - [ ] tts
+        - [ ] depth_units
+        - [ ] battery_voltage_x10
+        - [ ] cns
+        - [ ] dive_start
+        - [ ] o2_status
+        - [ ] ppo2_low_x100
+        - [ ] ppo2_high_x100
+        - [ ] firmware_version
+        - [ ] gas_0_oc_o2
+        - [ ] gas_1_oc_o2
+        - [ ] gas_2_oc_o2
+        - [ ] gas_3_oc_o2
+        - [ ] gas_4_oc_o2
+        - [ ] gas_0_cc_o2
+        - [ ] gas_1_cc_o2
+        - [ ] gas_2_cc_o2
+        - [ ] gas_3_cc_o2
+        - [ ] gas_4_cc_o2
+        - [ ] gas_0_oc_he
+        - [ ] gas_1_oc_he
+        - [ ] gas_2_oc_he
+        - [ ] gas_3_oc_he
+        - [ ] gas_4_oc_he
+        - [ ] gas_0_cc_he
+        - [ ] gas_1_cc_he
+        - [ ] gas_2_cc_he
+        - [ ] gas_3_cc_he
+        - [ ] gas_4_cc_he
+        - [ ] ccr_auto_sp_switch_up_lo_hi
+        - [ ] ccr_auto_sp_switch_up_depth
+        - [ ] ccr_auto_sp_switch_up_hi_lo
+        - [ ] ccr_auto_sp_switch_down_depth
+        - [ ] is_single_ppo2_sensor
+        - [ ] gf_low
+        - [ ] gf_high
+        - [ ] surface_pressure_mbars
+        - [ ] serial_number
+        - [ ] error_flags_0
+        - [ ] error_flags_1
+        - [ ] error_acks_0
+        - [ ] error_acks_1
+        - [ ] deco_model
+        - [ ] vpm_b_conservatism
+        - [ ] solenoid_depth_compensation
+        - [ ] oc_min_ppo2_x100
+        - [ ] oc_max_ppo2_x100
+        - [ ] oc_deco_ppo2_x100
+        - [ ] cc_min_ppo2_x100
+        - [ ] cc_max_ppo2_x100
+        - [ ] sensor_display
+        - [ ] last_stop_depth
+        - [ ] end_dive_delay
+        - [ ] clock_format
+        - [ ] title_color
+        - [ ] show_ppo2_in_oc_mode
+        - [ ] salinity
+        - [ ] gfs_value
+        - [ ] calibration_status
+        - [ ] sensor_1_calibration
+        - [ ] sensor_2_calibration
+        - [ ] sensor_3_calibration
+        - [ ] sensor_1_adc_offset
+        - [ ] sensor_2_adc_offset
+        - [ ] sensor_3_adc_offset
+        - [ ] rMS_temp_sticks_enabled
+        - [ ] rMS
+        - [ ] rMS_ready_flags
+        - [ ] rMS_scrubber_rate
+        - [ ] current_RCT
+        - [ ] current_RST
+        - [ ] computer_mode
+        - [ ] revo2_co2_temp_gender
+        - [ ] co2_temp_weight
+        - [ ] battery_voltage_x100
+        - [ ] battery_gauge_available
+        - [ ] battery_percent_remain
+        - [ ] battery_type
+        - [ ] battery_setting
+        - [ ] battery_warning_level_x100
+        - [ ] battery_critical_level_x100
+        - [ ] log_version
+        - [ ] gas_states
+        - [ ] temp_units
+        - [ ] error_flags_2
+        - [ ] error_acks_2
+        - [ ] ai_mode
+        - [ ] gtr_mode
+        - [ ] ai_units
+        - [ ] ai_t1_serial
+        - [ ] ai_t1_max_psi
+        - [ ] ai_t1_reserve_psi
+        - [ ] ai_t2_serial
+        - [ ] ai_t2_max_psi
+        - [ ] ai_t2_reserve_psi
+        - [ ] log_sample_rate_ms
+        - [ ] expected_log_sample_format
+        - [ ] timezone_offset
+        - [ ] dst
+        - [ ] language
+        - [ ] total_stack_time
+        - [ ] remaining_stack_time
+        - [ ] sub_mode_oc_rec
+        - [ ] total_on_time
+        - [ ] depth_alert
+        - [ ] time_alert
+        - [ ] low_ndl_alert
+        - [ ] ai_t1_on
+        - [ ] ai_t1_name
+        - [ ] ai_t2_on
+        - [ ] ai_t2_name
+        - [ ] ai_t3_serial
+        - [ ] ai_t3_max_psi
+        - [ ] ai_t3_reserve_psi
+        - [ ] ai_t3_on
+        - [ ] ai_t3_name
+        - [ ] ai_t4_serial
+        - [ ] ai_t4_max_psi
+        - [ ] ai_t4_reserve_psi
+        - [ ] ai_t4_on
+        - [ ] ai_t4_name
+        - [ ] ai_sidemount_switch_psi
+        - [ ] error_flags_3
+        - [ ] error_acks_3
+        - [ ] extended_dive_samples_in_log
+    - [ ] closing record:
+        - [ ] dive_number
+        - [ ] battery_voltage_x10
+        - [ ] cns
+        - [ ] o2_status
+        - [ ] ppo2_low_x100
+        - [ ] ppo2_high_x100
+        - [ ] firmware_version
+        - [ ] gas_0_oc_o2
+        - [ ] gas_1_oc_o2
+        - [ ] gas_2_oc_o2
+        - [ ] gas_3_oc_o2
+        - [ ] gas_4_oc_o2
+        - [ ] gas_0_cc_o2
+        - [ ] gas_1_cc_o2
+        - [ ] gas_2_cc_o2
+        - [ ] gas_3_cc_o2
+        - [ ] gas_4_cc_o2
+        - [ ] gas_0_oc_he
+        - [ ] gas_1_oc_he
+        - [ ] max_depth_x10
+        - [ ] dive_length
+        - [ ] dive_end
+        - [ ] gas_2_oc_he
+        - [ ] gas_3_oc_he
+        - [ ] gas_4_oc_he
+        - [ ] gas_0_cc_he
+        - [ ] gas_1_cc_he
+        - [ ] gas_2_cc_he
+        - [ ] gas_3_cc_he
+        - [ ] gas_4_cc_he
+        - [ ] ccr_auto_sp_switch_up_lo_hi
+        - [ ] ccr_auto_sp_switch_up_depth
+        - [ ] ccr_auto_sp_switch_up_hi_lo
+        - [ ] ccr_auto_sp_switch_down_depth
+        - [ ] is_single_ppo2_sensor
+        - [ ] gf_low
+        - [ ] gf_high
+        - [ ] surface_pressure_mbars
+        - [ ] serial_number
+        - [ ] max_descent_rate
+        - [ ] avg_descent_rate
+        - [ ] max_ascent_rate
+        - [ ] avg_ascent_rate
+        - [ ] error_flags_0
+        - [ ] error_flags_1
+        - [ ] error_acks_0
+        - [ ] error_acks_1
+        - [ ] deco_model
+        - [ ] vpm_b_conservatism
+        - [ ] solenoid_depth_compensation
+        - [ ] oc_min_ppo2_x100
+        - [ ] oc_max_ppo2_x100
+        - [ ] oc_deco_ppo2_x100
+        - [ ] cc_min_ppo2_x100
+        - [ ] cc_max_ppo2_x100
+        - [ ] sensor_display
+        - [ ] last_stop_depth
+        - [ ] end_dive_delay
+        - [ ] clock_format
+        - [ ] title_color
+        - [ ] show_ppo2_in_oc_mode
+        - [ ] salinity
+        - [ ] gfs_value
+        - [ ] calibration_status
+        - [ ] sensor_1_calibration
+        - [ ] sensor_2_calibration
+        - [ ] sensor_3_calibration
+        - [ ] sensor_1_adc_offset
+        - [ ] sensor_2_adc_offset
+        - [ ] sensor_3_adc_offset
+        - [ ] rMS_temp_sticks_enabled
+        - [ ] rMS
+        - [ ] rMS_ready_flags
+        - [ ] rMS_scrubber_rate
+        - [ ] current_RCT
+        - [ ] current_RST
+        - [ ] min_rct
+        - [ ] dive_time_with_min_rct
+        - [ ] min_rst
+        - [ ] dive_time_with_min_rst
+        - [ ] computer_mode
+        - [ ] revo2_co2_temp_gender
+        - [ ] co2_temp_weight
+        - [ ] battery_voltage_x100
+        - [ ] battery_gauge_available
+        - [ ] battery_percent_remain
+        - [ ] battery_type
+        - [ ] battery_setting
+        - [ ] battery_warning_level_x100
+        - [ ] battery_critical_level_x100
+        - [ ] log_version
+        - [ ] gas_states
+        - [ ] temp_units
+        - [ ] error_flags_2
+        - [ ] error_acks_2
+        - [ ] ai_mode
+        - [ ] gtr_mode
+        - [ ] ai_units
+        - [ ] ai_t1_serial
+        - [ ] ai_t1_max_psi
+        - [ ] ai_t1_reserve_psi
+        - [ ] ai_t2_serial
+        - [ ] ai_t2_max_psi
+        - [ ] ai_t2_reserve_psi
+        - [ ] log_sample_rate_ms
+        - [ ] expected_log_sample_format
+        - [ ] timezone_offset
+        - [ ] dst
+        - [ ] language
+        - [ ] last_avg_sac_x100
+    - [ ] final record:
+            - [ ] serial_number
+            - [ ] checksum
+            - [ ] firmware_version
+            - [ ] log_version
+            - [ ] product
+
+- [ ] add ability to download selected dives
+- [ ] ensure proper UX:
+    - [ ] display spinner when connecting to dive computer
+    - [ ] display progress bar when downloading logs
+    - [ ] display a message when no dives are stored
+- [ ] add message to enable web bluetooth
+- [ ] allow storing logs locally
+- [ ] manually add logs
+- [ ] edit logs
+- [ ] able to export dive logs to csv or json or DL7
