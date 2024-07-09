@@ -1,5 +1,6 @@
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.backends.device import BLEDevice
 import asyncio
 import datetime
 import json
@@ -70,27 +71,32 @@ class BLEShearwater:
         self._client: BleakClient | None = None
         self._callbacks = []
 
-    async def subscribe(self, callback: Callable):
-        if not self._callbacks:
-            await self.connect()
+    def subscribe(self, callback: Callable):
         if callback in self._callbacks:
             return
         self._callbacks.append(callback)
 
-    async def unsubscribe(self, callback: Callable):
+    def unsubscribe(self, callback: Callable):
         self._callbacks.remove(callback)
-        if not self._callbacks:
-            await self.close_connection()
 
-    async def connect(self):
+    async def __scan_ble(self, name: str) -> BLEDevice:
         devices = await BleakScanner.discover()
         for d in devices:
             if d.name and "perdix" in d.name.lower():
-                target_device = d
-                print(f"perdix found: {target_device}")
-                break
+                print(f"perdix found: {d}")
+                return d
         else:
             raise DeviceNotFound
+
+    async def connect(self):
+        print("connecting..", end="", flush=True)
+        while True:
+            try:
+                print(".", end="", flush=True)
+                target_device = await self.__scan_ble("perdix")
+                break
+            except DeviceNotFound:
+                await asyncio.sleep(1)
         self._client = BleakClient(target_device)
         await self._client.connect()
         await self._client.start_notify(CHARACTERISTIC_UUID, self.got_new_data)
@@ -104,7 +110,7 @@ class BLEShearwater:
             raise DeviceNotConnected
         prepend = bytes([0x01, 0x00, 0xFF, 0x01, len(data) + 1, 0x00])
         encoded = slip_encode(prepend + data)
-        print('sending: ', encoded.hex(sep=" "))
+        print("sending: ", encoded.hex(sep=" "))
         await self._client.write_gatt_char(CHARACTERISTIC_UUID, encoded)
 
     async def close_connection(self):
@@ -118,10 +124,12 @@ class BLEShearwater:
 def get_num(data: bytes):
     return int.from_bytes(data, byteorder="big")
 
+
 depth_units = {
     0: "meters",
     1: "feet",
 }
+
 
 def decode_manifest(data: bytes):
 
@@ -172,7 +180,6 @@ class Manifest:
         self._is_acked = False
         self._accumulator = bytearray()
         self._items = []
-        self._has_reached_end = False
         self._is_new_data = False
 
     async def _send_data(self, data: bytes):
@@ -196,18 +203,12 @@ class Manifest:
             self._is_new_data = True
             self.decode_manifests()
             self._accumulator = bytearray()
-            self._has_reached_end = (
-                self._has_reached_end or bytes([0, 0, 0, 0, 0, 0, 0]) in data
-            )
 
     def decode_manifests(self):
         def extract_manifests(data: bytes) -> list[bytes]:
             payload = data[6:]
             manifests = [payload[i : i + 32] for i in range(0, len(payload), 32)]
-            all_ok = [True for m in manifests if m[0] == 0xA5 and m[1] == 0xC4]
-            if not all_ok:
-                raise Exception("Not all manifests start with 0xa5 0xc4")
-            return manifests
+            return [m for m in manifests if m[0] == 0xA5 and m[1] == 0xC4]
 
         data = self._accumulator
         is_packet_ok = data[0:2] == bytes([0x01, 0xFF]) and data[3:4] == bytes([0x00])
@@ -221,18 +222,20 @@ class Manifest:
             self._items.append(decode_manifest(manifest))
 
     async def read(self):
-        await self._dev.subscribe(self._on_data)
+        self._dev.subscribe(self._on_data)
+        max_blocks = 12
         await self._send_data(bytes([0x35, 0x00, 0x34, 0xE0, 0x00, 0x00, 0x00]))
         while not self._is_acked:
             await asyncio.sleep(0.1)
         block_num = 1
-        while not self._has_reached_end:
+        while block_num <= max_blocks:
             await self._send_data(bytes([0x36, block_num]))
             await self.wait_for_new_data()
             block_num += 1
-        await asyncio.sleep(0.5)
-        await self._dev.unsubscribe(self._on_data)
-        await asyncio.sleep(0.5)
+        await self._send_data(bytes([0x37]))
+        await asyncio.sleep(1)
+        self._dev.unsubscribe(self._on_data)
+
 
 class DiveLog:
     def __init__(self, dev: BLEShearwater):
@@ -264,7 +267,8 @@ class DiveLog:
             self._is_new_data = True
             # self.decode_manifests()
             self._has_reached_end = (
-                self._has_reached_end or bytes([0, 0, 0, 0, 0, 0, 0, 0]) == self._accumulator[-9:-1]
+                self._has_reached_end
+                or bytes([0, 0, 0, 0, 0, 0, 0, 0]) == self._accumulator[-9:-1]
             )
             self._accumulator = bytearray()
 
@@ -289,7 +293,7 @@ class DiveLog:
             self._items.append(decode_manifest(manifest))
 
     async def read(self, address: bytes):
-        await self._dev.subscribe(self._on_data)
+        self._dev.subscribe(self._on_data)
         await self._send_data(bytes([0x35, 0x10, 0x34, *address]))
         while not self._is_acked:
             await asyncio.sleep(0.1)
@@ -300,25 +304,34 @@ class DiveLog:
             block_num += 1
         await self._send_data(bytes([0x37]))
         await asyncio.sleep(1)
-        await self._dev.unsubscribe(self._on_data)
+        self._dev.unsubscribe(self._on_data)
         await asyncio.sleep(0.5)
+
 
 async def get_manifest():
     dev = BLEShearwater()
+    await dev.connect()
     man = Manifest(dev)
     await man.read()
+    await dev.close_connection()
     print(json.dumps(man._items, indent=2))
+
 
 async def get_a_dive():
     dev = BLEShearwater()
+    await dev.connect()
     dlog = DiveLog(dev)
-    await dlog.read(bytes([0x80,0x07,0x9e,0x20]))
+    await dlog.read(bytes([0x80, 0x07, 0x9E, 0x20]))
+    await dev.close_connection()
+
 
 def xor_blocks(b1: bytes, b2: bytes) -> bytes:
     return bytes([b1[i] ^ b2[i] for i in range(min(len(b1), len(b2)))])
 
+
 def is_open_record(data: bytes) -> bool:
     return data[0:2] == bytes([0x10, 0xFF])
+
 
 class LogDecoder:
     def __init__(self):
@@ -340,18 +353,18 @@ class LogDecoder:
             0x25: self.decode_close_record_25,
             0x26: self.decode_close_record_26,
             0x27: self.decode_close_record_27,
-            0xff: self.decode_final_record
+            0xFF: self.decode_final_record,
         }
 
     def decode(self, data: bytes):
         record_type = data[0]
         if record_type not in self.__decoders:
-            return data.hex() #record type in hex 
+            return data.hex()  # record type in hex
         return self.__decoders[record_type](data)
 
     def decode_open_record_10(self, data: bytes):
         return {
-            "dive_number":  get_num(data[2:4]),
+            "dive_number": get_num(data[2:4]),
             "gf_low": get_num(data[4:5]),
             "gf_high": get_num(data[5:6]),
             "tts": get_num(data[6:8]),
@@ -387,13 +400,13 @@ class LogDecoder:
             "gas_2_cc_he": get_num(data[6:7]),
             "gas_3_cc_he": get_num(data[7:8]),
             "gas_4_cc_he": get_num(data[8:9]),
-            "ccr_auto_sp_switch_up_lo_hi": get_num(data[9:10]), # 0 - manual, 1 - auto
+            "ccr_auto_sp_switch_up_lo_hi": get_num(data[9:10]),  # 0 - manual, 1 - auto
             "ccr_auto_sp_switch_up_depth": get_num(data[10:11]),
-            "ccr_auto_sp_switch_up_hi_lo": get_num(data[11:12]), # 0 - manual, 1 - auto
+            "ccr_auto_sp_switch_up_hi_lo": get_num(data[11:12]),  # 0 - manual, 1 - auto
             "ccr_auto_sp_switch_down_depth": get_num(data[12:13]),
-            "is_single_ppo2_sensor": get_num(data[13:14]), #0 - 3 sensor, 1 - 1 sensor
-            "gf_low": get_num(data[14:15]), #duplicate
-            "gf_high": get_num(data[15:16]), #duplicate
+            "is_single_ppo2_sensor": get_num(data[13:14]),  # 0 - 3 sensor, 1 - 1 sensor
+            "gf_low": get_num(data[14:15]),  # duplicate
+            "gf_high": get_num(data[15:16]),  # duplicate
             "surface_pressure_mbars": get_num(data[16:18]),
             "serial_number": data[18:22].hex(),
         }
@@ -404,27 +417,29 @@ class LogDecoder:
             "error_flags_1": get_num(data[5:9]),
             "error_acks_0": get_num(data[9:13]),
             "error_acks_1": get_num(data[13:17]),
-            "deco_model": get_num(data[18:19]), # 0=GF, 1=VPM-B, 2=VPMB-B/GFS, 3=DCIEM
+            "deco_model": get_num(data[18:19]),  # 0=GF, 1=VPM-B, 2=VPMB-B/GFS, 3=DCIEM
             "vpm_b_conservatism": get_num(data[19:20]),
-            "solenoid_depth_compensation": get_num(data[20:21]), # DEPRECATED
+            "solenoid_depth_compensation": get_num(data[20:21]),  # DEPRECATED
             "oc_min_ppo2_x100": get_num(data[21:22]),
             "oc_max_ppo2_x100": get_num(data[22:23]),
             "oc_deco_ppo2_x100": get_num(data[23:24]),
             "cc_min_ppo2_x100": get_num(data[24:25]),
             "cc_max_ppo2_x100": get_num(data[25:26]),
-            "sensor_display": get_num(data[26:27]), # SC only: 0=ppo2, 1=FiO2, 2=both
+            "sensor_display": get_num(data[26:27]),  # SC only: 0=ppo2, 1=FiO2, 2=both
             "last_stop_depth": get_num(data[28:29]),
             "end_dive_delay": get_num(data[29:31]),
-            "clock_format": get_num(data[31:32]), #0=24hr, 1=AM/PM
+            "clock_format": get_num(data[31:32]),  # 0=24hr, 1=AM/PM
         }
 
     def decode_open_record_13(self, data: bytes):
         return {
-            "title_color": get_num(data[1:2]), # 1=green 4=blue, 8=cyan, 9=gray
+            "title_color": get_num(data[1:2]),  # 1=green 4=blue, 8=cyan, 9=gray
             "show_ppo2_in_oc_mode": get_num(data[2:3]),
-            "salinity": get_num(data[3:5]), #in kg/m^3
+            "salinity": get_num(data[3:5]),  # in kg/m^3
             "gfs_value": get_num(data[5:6]),
-            "calibration_status": get_num(data[6:7]), # bit 0: sensor 1, bit 1: sensor 2, bit 2: sensor 3
+            "calibration_status": get_num(
+                data[6:7]
+            ),  # bit 0: sensor 1, bit 1: sensor 2, bit 2: sensor 3
             "sensor_1_calibration": get_num(data[7:9]),
             "sensor_2_calibration": get_num(data[9:11]),
             "sensor_3_calibration": get_num(data[11:13]),
@@ -434,36 +449,55 @@ class LogDecoder:
             "rMS_temp_sticks_enabled": get_num(data[16:17]),
             "rMS warmup_flags": get_num(data[17:18]),
             "rMS_ready_flags": get_num(data[18:19]),
-            "rMS_scrubber_rate": get_num(data[19:20]), # 0=unknown, 1=surface disconnect, 2=dive disconnect, 3=pre-warm, 4=warm, 5=ready, 255=off
+            "rMS_scrubber_rate": get_num(
+                data[19:20]
+            ),  # 0=unknown, 1=surface disconnect, 2=dive disconnect, 3=pre-warm, 4=warm, 5=ready, 255=off
             "current_RCT": get_num(data[20:22]),
             "current_RST": get_num(data[22:24]),
         }
 
     def decode_open_record_14(self, data: bytes):
         return {
-            "computer_mode": get_num(data[1:2]), # 0=cc/bo, 1=oc tec, 2=gauge, 3=ppo2 display, 4=sc/bo, 5=cc/bo 2, 6=oc rec, 7=freedive
+            "computer_mode": get_num(
+                data[1:2]
+            ),  # 0=cc/bo, 1=oc tec, 2=gauge, 3=ppo2 display, 4=sc/bo, 5=cc/bo 2, 6=oc rec, 7=freedive
             "revo2_co2_temp_gender": get_num(data[2:3]),
             "co2_temp_weight": get_num(data[3:5]),
             "battery_voltage_x100": get_num(data[5:7]),
             "battery_gauge_available": get_num(data[7:8]),
             "battery_percent_remain": get_num(data[8:9]),
-            "battery_type": get_num(data[9:10]), #1=1.5V alkaline, 2=1.5V lithum, 3=1.2V NiMH, 4=3.6V Saft, 5=3.7V Li-Ion
-            "battery_setting": get_num(data[10:11]), #0=auto, 1=1.5V alkaline, 2=1.5V lithum, 3=1.2V NiMH, 4=3.6V Saft, 5=3.7V Li-Ion
+            "battery_type": get_num(
+                data[9:10]
+            ),  # 1=1.5V alkaline, 2=1.5V lithum, 3=1.2V NiMH, 4=3.6V Saft, 5=3.7V Li-Ion
+            "battery_setting": get_num(
+                data[10:11]
+            ),  # 0=auto, 1=1.5V alkaline, 2=1.5V lithum, 3=1.2V NiMH, 4=3.6V Saft, 5=3.7V Li-Ion
             "battery_warning_level_x100": get_num(data[11:13]),
             "battery_critical_level_x100": get_num(data[13:15]),
             "log_version": get_num(data[16:17]),
-            "gas_states": get_num(data[17:19]), #bit set for corresponding gas when on
-            "temp_units": get_num(data[19:20]), # 0=v33 and before, 2=C, 3=F
+            "gas_states": get_num(data[17:19]),  # bit set for corresponding gas when on
+            "temp_units": get_num(data[19:20]),  # 0=v33 and before, 2=C, 3=F
             "error_flags_2": get_num(data[20:24]),
             "error_acks_2": get_num(data[24:28]),
-            "ai_mode": get_num(data[28:29]), # 0=not used, 1=T1, 2=T2, 3=both
-            "gtr_mode": get_num(data[29:30]), # 0=not used, 1=T1, 2=T2, 3=both
-            "ai_units": get_num(data[30:31]), # 0=psi/cu.ft, 1=Bar/L
+            "ai_mode": get_num(data[28:29]),  # 0=not used, 1=T1, 2=T2, 3=both
+            "gtr_mode": get_num(data[29:30]),  # 0=not used, 1=T1, 2=T2, 3=both
+            "ai_units": get_num(data[30:31]),  # 0=psi/cu.ft, 1=Bar/L
         }
 
     def decode_open_record_15(self, data: bytes):
         languages = [
-            "English", "Chinese", "Japanese", "Korean", "Russian", "French", "German", "Spanish", "Italian", "Traditional Chinese", "Portuguese", "Polish"
+            "English",
+            "Chinese",
+            "Japanese",
+            "Korean",
+            "Russian",
+            "French",
+            "German",
+            "Spanish",
+            "Italian",
+            "Traditional Chinese",
+            "Portuguese",
+            "Polish",
         ]
         return {
             "ai_t1_serial": data[1:4].hex(),
@@ -473,22 +507,32 @@ class LogDecoder:
             "ai_t2_max_psi": get_num(data[15:17]),
             "ai_t2_reserve_psi": get_num(data[17:19]),
             "log_sample_rate_ms": get_num(data[23:25]),
-            "expected_log_sample_format": get_num(data[25:26]), #0x01=normal, 0x02=freedive
+            "expected_log_sample_format": get_num(
+                data[25:26]
+            ),  # 0x01=normal, 0x02=freedive
             "timezone_offset": get_num(data[26:30]),
-            "dst": get_num(data[30:31]), #0=dst off, 1=dst on
-            "language": languages[get_num(data[31:32])], 
+            "dst": get_num(data[30:31]),  # 0=dst off, 1=dst on
+            "language": languages[get_num(data[31:32])],
         }
-    
+
     def decode_open_record_16(self, data: bytes):
         return {
             "total_stack_time": get_num(data[1:3]),
             "remaining_stack_time": get_num(data[3:5]),
-            "sub_mode_oc_rec": get_num(data[5:6]), #0=3 Gas Nitrox, 1=air, 2=nitrox, 3=oc rec(legacy)
+            "sub_mode_oc_rec": get_num(
+                data[5:6]
+            ),  # 0=3 Gas Nitrox, 1=air, 2=nitrox, 3=oc rec(legacy)
             "total_on_time": get_num(data[6:10]),
-            "depth_alert": get_num(data[10:13]), #offset 10: enabled, offset 11-12: value in ft x10
-            "time_alert": get_num(data[13:16]), #offset 13: enabled, offset 14-15: value in minutes
-            "low_ndl_alert": get_num(data[16:19]), #offset 16: enabled, offset 17-18: value in minutes
-            "ai_t1_on": get_num(data[19:20]), 
+            "depth_alert": get_num(
+                data[10:13]
+            ),  # offset 10: enabled, offset 11-12: value in ft x10
+            "time_alert": get_num(
+                data[13:16]
+            ),  # offset 13: enabled, offset 14-15: value in minutes
+            "low_ndl_alert": get_num(
+                data[16:19]
+            ),  # offset 16: enabled, offset 17-18: value in minutes
+            "ai_t1_on": get_num(data[19:20]),
             "ai_t1_name": data[20:22].hex(),
             "ai_t2_on": get_num(data[22:23]),
             "ai_t2_name": data[23:25].hex(),
@@ -509,27 +553,29 @@ class LogDecoder:
             "ai_sidemount_switch_psi": data[14:16].hex(),
             "error_flags_3": get_num(data[16:20]),
             "error_acks_3": get_num(data[20:24]),
-            "extended_dive_samples_in_log": get_num(data[24:25]), # 0x00 = not present, 0xE1 = E1 samples are present
+            "extended_dive_samples_in_log": get_num(
+                data[24:25]
+            ),  # 0x00 = not present, 0xE1 = E1 samples are present
         }
 
     def decode_close_record_20(self, data: bytes):
         decoded = self.decode_open_record_10(data)
-        del decoded['gf_low']
-        del decoded['gf_high']
-        del decoded['tts']
-        del decoded['depth_units']
-        del decoded['dive_start']
-        decoded['max_depth_x10'] = get_num(data[4:6])
-        decoded['dive_length'] = get_num(data[6:9])
-        decoded['dive_end'] = get_num(data[12:16])
+        del decoded["gf_low"]
+        del decoded["gf_high"]
+        del decoded["tts"]
+        del decoded["depth_units"]
+        del decoded["dive_start"]
+        decoded["max_depth_x10"] = get_num(data[4:6])
+        decoded["dive_length"] = get_num(data[6:9])
+        decoded["dive_end"] = get_num(data[12:16])
         return decoded
 
     def decode_close_record_21(self, data: bytes):
         decoded = self.decode_open_record_11(data)
-        decoded['max_descent_rate'] = get_num(data[22:24])
-        decoded['avg_descent_rate'] = get_num(data[24:26])
-        decoded['max_ascent_rate'] = get_num(data[26:28])
-        decoded['avg_ascent_rate'] = get_num(data[28:30])
+        decoded["max_descent_rate"] = get_num(data[22:24])
+        decoded["avg_descent_rate"] = get_num(data[24:26])
+        decoded["max_ascent_rate"] = get_num(data[26:28])
+        decoded["avg_ascent_rate"] = get_num(data[28:30])
         return decoded
 
     def decode_close_record_22(self, data: bytes):
@@ -537,18 +583,18 @@ class LogDecoder:
 
     def decode_close_record_23(self, data: bytes):
         decoded = self.decode_open_record_13(data)
-        decoded['min_rct'] = get_num(data[24:26])
-        decoded['dive_time_with_min_rct'] = get_num(data[26:28])
-        decoded['min_rst'] = get_num(data[28:30])
-        decoded['dive_time_with_min_rst'] = get_num(data[30:32])
+        decoded["min_rct"] = get_num(data[24:26])
+        decoded["dive_time_with_min_rct"] = get_num(data[26:28])
+        decoded["min_rst"] = get_num(data[28:30])
+        decoded["dive_time_with_min_rst"] = get_num(data[30:32])
         return decoded
-    
+
     def decode_close_record_24(self, data: bytes):
         return self.decode_open_record_14(data)
-    
+
     def decode_close_record_25(self, data: bytes):
         decoded = self.decode_open_record_15(data)
-        decoded['last_avg_sac_x100'] = get_num(data[19:23])
+        decoded["last_avg_sac_x100"] = get_num(data[19:23])
         return decoded
 
     def decode_close_record_26(self, data: bytes):
@@ -581,11 +627,24 @@ class LogDecoder:
             "gf99": get_num(data[25:26]),
             "at_plus_5": get_num(data[26:28]),
             "ai_t1_data": get_num(data[28:30]),
-            "sac": get_num(data[30:32]), #in psi/min
+            "sac": get_num(data[30:32]),  # in psi/min
         }
 
     def decode_final_record(self, data: bytes):
-        products = ["Pursuit", None, "Predator", "Petrel", "Nerd", "Perdix", "Perdix AI", "Nerd 2", "Teric", "Peregrine", "Petrel 3", "Perdix 2"]
+        products = [
+            "Pursuit",
+            None,
+            "Predator",
+            "Petrel",
+            "Nerd",
+            "Perdix",
+            "Perdix AI",
+            "Nerd 2",
+            "Teric",
+            "Peregrine",
+            "Petrel 3",
+            "Perdix 2",
+        ]
         return {
             "serial_number": data[2:6].hex(),
             "checksum": get_num(data[9:10]),
@@ -594,33 +653,36 @@ class LogDecoder:
             "product": products[get_num(data[13:14])],
         }
 
+
 def expand_to_runs(binary_chunks: list[str]) -> bytes:
     runs = bytearray()
     for chunk in binary_chunks:
         determiner = chunk[0]
-        payload = int(chunk[1:],2)
+        payload = int(chunk[1:], 2)
         if determiner == "1":
             runs.append(payload)
         else:
             runs += bytes([0] * payload)
     return runs
 
+
 def packets_to_9bit_bin_chunks(data: bytes) -> list[str]:
     bin_array = [bin(b)[2:].zfill(8) for b in data]
     bits_string = "".join(bin_array)
-    chunks = [bits_string[i:i+9] for i in range(0, len(bits_string), 9)]
+    chunks = [bits_string[i : i + 9] for i in range(0, len(bits_string), 9)]
     return chunks
+
 
 class LogReader:
     def __init__(self):
         self.__raw_accumulator = bytearray()
         self.__subscribers = []
         self.__runs = bytearray()
-        self.__last_log = bytes([0]*32)
+        self.__last_log = bytes([0] * 32)
 
     def subscribe(self, callback: Callable):
         self.__subscribers.append(callback)
-    
+
     def unsubscribe(self, callback: Callable):
         self.__subscribers.remove(callback)
 
@@ -630,8 +692,8 @@ class LogReader:
                 callback(log)
 
     def __extract_logs(self, packet: bytes) -> list[bytes]:
-        chunks = packets_to_9bit_bin_chunks(packet) # data always comes in 144 bytes
-        self.__runs += expand_to_runs(chunks) # runs can vary in size
+        chunks = packets_to_9bit_bin_chunks(packet)  # data always comes in 144 bytes
+        self.__runs += expand_to_runs(chunks)  # runs can vary in size
         logs: list[bytes] = []
         while len(self.__runs) >= 32:
             encoded_block = self.__runs[:32]
@@ -640,7 +702,7 @@ class LogReader:
             self.__last_log = log_entry
             logs.append(log_entry)
         return logs
-    
+
     def data_arrived(self, data: bytes):
         self.__raw_accumulator += data[2:]
         if self.__raw_accumulator[-1] == END_OF_FRAME:
@@ -649,18 +711,20 @@ class LogReader:
             logs = self.__extract_logs(decoded)
             self.__notify_subs(logs)
 
+
 if __name__ == "__main__":
-    # asyncio.run(main())
-    # exit()
-    packets = []
-    def decodeprint(packet):
-        decoder = LogDecoder()
-        print(decoder.decode(packet))
-    
-    reader = LogReader()
-    reader.subscribe(decodeprint)
-    packet = ""
-    blocks = []
-    accumulator = bytearray()
-    for p in packets:
-        reader.data_arrived(bytes.fromhex(p))
+    # asyncio.run(get_manifest())
+    asyncio.run(get_a_dive())
+    exit()
+    # from dummy_data import packets
+    # def decodeprint(packet):
+    #     decoder = LogDecoder()
+    #     print(decoder.decode(packet))
+
+    # reader = LogReader()
+    # reader.subscribe(decodeprint)
+    # packet = ""
+    # blocks = []
+    # accumulator = bytearray()
+    # for p in packets:
+    #     reader.data_arrived(bytes.fromhex(p))
