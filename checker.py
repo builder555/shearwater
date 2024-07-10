@@ -317,28 +317,6 @@ class LogDownloader:
         self._dev.unsubscribe(self._on_data)
 
 
-async def get_manifest():
-    dev = BLEShearwater()
-    await dev.connect()
-    man = Manifest(dev)
-    await man.read()
-    await dev.close_connection()
-    print(json.dumps(man._items, indent=2))
-
-
-async def get_a_dive():
-    def log_entry_received(data: bytes):
-        decoder = LogDecoder()
-        print(decoder.decode(data))
-    dev = BLEShearwater()
-    await dev.connect()
-    divelog = LogDownloader(dev)
-    divelog.subscribe(log_entry_received)
-    await divelog.download(bytes([0x80, 0x07, 0x9E, 0x20]))
-    await asyncio.sleep(2)
-    await dev.close_connection()
-
-
 def xor_blocks(b1: bytes, b2: bytes) -> bytes:
     return bytes([b1[i] ^ b2[i] for i in range(min(len(b1), len(b2)))])
 
@@ -686,11 +664,37 @@ def packets_to_9bit_bin_chunks(data: bytes) -> list[str]:
     chunks = [bits_string[i : i + 9] for i in range(0, len(bits_string), 9)]
     return chunks
 
+async def get_manifest(dev):
+    # dev = BLEShearwater()
+    # await dev.connect()
+    man = Manifest(dev)
+    await man.read()
+    # await dev.close_connection()
+    print(json.dumps(man._items, indent=2))
+    await asyncio.sleep(2)
+
+
+async def get_a_dive(dev):
+    def log_entry_received(data: bytes):
+        decoder = LogDecoder()
+        print(decoder.decode(data))
+    # dev = BLEShearwater()
+    # await dev.connect()
+    divelog = LogDownloader(dev)
+    divelog.subscribe(log_entry_received)
+    await divelog.download(bytes([0x80, 0x07, 0x9E, 0x20]))
+    await asyncio.sleep(2)
+    # await dev.close_connection()
+
+async def main():
+    dev = BLEShearwater()
+    await dev.connect()
+    await get_manifest(dev)
+    await get_a_dive(dev)
+    await dev.close_connection()
 
 if __name__ == "__main__":
-    # asyncio.run(get_manifest())
-    asyncio.run(get_a_dive())
-    exit()
+    asyncio.run(main())
     # from dummy_data import packets
     # def decodeprint(packet):
     #     decoder = LogDecoder()
