@@ -3,10 +3,12 @@ import { onMounted, ref } from 'vue';
 import DiveCard from './components/dive-card.vue';
 import { DiveManifest } from './device/divemanifest';
 import { BLEShearwater } from './device/ble';
+import { LogDownloader, LogDecoder } from './device/divelogs';
 
 const dives = ref([]);
 
 const picked = ref([]);
+const progress = ref(0);
 
 function toggleDivePicked(dive) {
   if (picked.value.includes(dive.diveNo)) {
@@ -31,16 +33,37 @@ async function connect() {
   await dev.connect();
   isConnected.value = true;
   const manifest = new DiveManifest(dev);
+  manifest.onProgress(p => {
+    progress.value = p * 100;
+  });
   dives.value = await manifest.read();
+  progress.value = 0;
 }
 
+async function download() {
+  const downloader = new LogDownloader(dev);
+  const decoder = new LogDecoder();
+  const divesToDownload = dives.value.filter((d) => picked.value.includes(d.diveNo));
+  for(const dive of divesToDownload) {
+    console.log('downloading', dive);
+    const logs = [];
+    downloader.subscribe((data) => {
+      const decoded = decoder.decode(data);
+      if (typeof decoded === 'object') {
+        logs.push(decoded);
+      }
+    });
+    await downloader.download(dive.recordAddressStart);
+    console.log(logs);
+  }
+}
 onMounted(() => {
   isBTEnabled.value = dev.isBluetoothEnabled();
 });
 </script>
 
 <template>
-  <header>
+  <header :style="{ 'background': `linear-gradient(to right, #76c7c0 ${progress}%, #00aeef ${progress}%)`}">
     <div v-if="isConnected">
       Connected to <strong>{{ dev.name }}</strong>
       displaying {{ dives.length }} dives.
@@ -64,6 +87,7 @@ onMounted(() => {
       <label for="pick-all">
         Download all
       </label>
+      <button @click="download">Download</button>
     </div>
     <div class="dives">
       <DiveCard 
@@ -89,7 +113,7 @@ onMounted(() => {
     align-items: center;
     line-height: 50px;
     height: 50px;
-    background: #00aeef;
+    background: #00ef9b;
     width: 100%;
   }
 </style>
