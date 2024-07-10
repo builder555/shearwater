@@ -290,8 +290,10 @@
     - [ ] display spinner when connecting to dive computer
     - [ ] display progress bar when downloading logs
     - [ ] display a message when no dives are stored
-- [ ] add message to enable web bluetooth
-- [ ] allow storing logs locally
-- [ ] manually add logs
-- [ ] edit logs
+    - [ ] compact view for log manifest
+    - [ ] use color to indicate computer connected or not
+- [ ] add hint how to enable web bluetooth
+- [ ] store logs locally: store undownloaded manifest by computer ID
+- [ ] able to manually add logs
+- [ ] able to edit logs
 - [ ] able to export dive logs to csv or json or DL7
