@@ -1,5 +1,6 @@
 import { END_OF_FRAME } from "./constants";
 import { slipDecode } from "./SLIP";
+
 function getHhMmSs(s) {
     const date = new Date(s * 1000);
     const hours = String(date.getUTCHours()).padStart(2, '0');
@@ -41,7 +42,7 @@ function decodeManifest(data) {
       diveDuration: getNum(data.slice(12, 16)),
       maxDepthX10: getNum(data.slice(16, 18)),
       avgDepthX10: getNum(data.slice(18, 20)),
-      recordAddressStart: Array.from(data.slice(20, 24)).map(byte => byte.toString(16).padStart(2, '0')).join(''),
+      recordAddressStart: data.slice(20, 24),
       recordAddressEnd: Array.from(data.slice(24, 28)).map(byte => byte.toString(16).padStart(2, '0')).join(''),
       depthUnits: depthUnits[getNum(data.slice(28, 29))],
       tempUnits: getNum(data.slice(29, 30)), // ignore
@@ -80,6 +81,7 @@ export class DiveManifest {
       this._manifests = [];
       this._hasReachedEnd = false;
       this._isNewData = false;
+      this._progressCallback = () => {};
     }
   
     async _sendData(data) {
@@ -134,7 +136,9 @@ export class DiveManifest {
         this._manifests.push(decodeManifest(manifest));
       });
     }
-  
+    onProgress(callback) {
+        this._progressCallback = callback;
+    }
     async read() {
       await this._dev.subscribe(this._onData.bind(this));
       const blocks = 12;
@@ -144,11 +148,10 @@ export class DiveManifest {
       }
       for(let i=1; i<=blocks; i++) {
         await this._sendData(new Uint8Array([0x36, i]));
+        this._progressCallback(i / blocks);
         await this.waitForNewData();
       }
-      await new Promise(resolve => setTimeout(resolve, 500));
       await this._sendData(new Uint8Array([0x37]));
-      await new Promise(resolve => setTimeout(resolve, 500));
       await this._dev.unsubscribe();
       return this._manifests;
     }
