@@ -237,7 +237,7 @@ class Manifest:
         self._dev.unsubscribe(self._on_data)
 
 
-class DiveLog:
+class LogDownloader:
     def __init__(self, dev: BLEShearwater):
         self._dev = dev
         self._is_acked = False
@@ -245,6 +245,20 @@ class DiveLog:
         self._items = []
         self._has_reached_end = False
         self._is_new_data = False
+        self._subscribers = []
+        self.__runs = bytearray()
+        self.__last_log = bytes([0] * 32)
+
+    def subscribe(self, callback: Callable):
+        self._subscribers.append(callback)
+
+    def unsubscribe(self, callback: Callable):
+        self._subscribers.remove(callback)
+
+    def __notify_subs(self, logs: list[bytes]):
+        for callback in self._subscribers:
+            for log in logs:
+                callback(log)
 
     async def _send_data(self, data: bytes):
         self._is_new_data = False
@@ -254,6 +268,18 @@ class DiveLog:
         while not self._is_new_data:
             await asyncio.sleep(0.01)
 
+    def __extract_logs(self, packet: bytes) -> list[bytes]:
+        chunks = packets_to_9bit_bin_chunks(packet)  # data always comes in 144 bytes
+        self.__runs += expand_to_runs(chunks)  # runs can vary in size
+        logs: list[bytes] = []
+        while len(self.__runs) >= 32:
+            encoded_block = self.__runs[:32]
+            self.__runs = self.__runs[32:]
+            log_entry = xor_blocks(encoded_block, self.__last_log)
+            self.__last_log = log_entry
+            logs.append(log_entry)
+        return logs
+
     def _on_data(self, data: bytes):
         print(f"received data: {data.hex()}")
         is_ack = bytes.fromhex("01ff0400751092") in data
@@ -261,38 +287,23 @@ class DiveLog:
             self._is_acked = True
             self._is_new_data = True
             return
+        is_log_done = data[-3:] == bytes([0x77, 0x00, END_OF_FRAME])
+        if is_log_done:
+            return
         headless_data = data[2:]
         self._accumulator += headless_data
         if self._accumulator[-1] == END_OF_FRAME:
             self._is_new_data = True
-            # self.decode_manifests()
             self._has_reached_end = (
                 self._has_reached_end
                 or bytes([0, 0, 0, 0, 0, 0, 0, 0]) == self._accumulator[-9:-1]
             )
+            decoded = slip_decode(self._accumulator[6:])
+            logs = self.__extract_logs(decoded)
             self._accumulator = bytearray()
+            self.__notify_subs(logs)
 
-    def decode_manifests(self):
-        def extract_manifests(data: bytes) -> list[bytes]:
-            payload = data[6:]
-            manifests = [payload[i : i + 32] for i in range(0, len(payload), 32)]
-            all_ok = [True for m in manifests if m[0] == 0xA5 and m[1] == 0xC4]
-            if not all_ok:
-                raise Exception("Not all manifests start with 0xa5 0xc4")
-            return manifests
-
-        data = self._accumulator
-        is_packet_ok = data[0:2] == bytes([0x01, 0xFF]) and data[3:4] == bytes([0x00])
-        if not is_packet_ok:
-            raise Exception(f"Invalid packet: {data.hex()}")
-        decoded = slip_decode(data)
-        if not decoded:
-            raise Exception(f"Failed to decode: {data.hex()}")
-        manifests = extract_manifests(decoded)
-        for manifest in manifests:
-            self._items.append(decode_manifest(manifest))
-
-    async def read(self, address: bytes):
+    async def download(self, address: bytes):
         self._dev.subscribe(self._on_data)
         await self._send_data(bytes([0x35, 0x10, 0x34, *address]))
         while not self._is_acked:
@@ -303,9 +314,7 @@ class DiveLog:
             await self.wait_for_new_data()
             block_num += 1
         await self._send_data(bytes([0x37]))
-        await asyncio.sleep(1)
         self._dev.unsubscribe(self._on_data)
-        await asyncio.sleep(0.5)
 
 
 async def get_manifest():
@@ -318,10 +327,15 @@ async def get_manifest():
 
 
 async def get_a_dive():
+    def log_entry_received(data: bytes):
+        decoder = LogDecoder()
+        print(decoder.decode(data))
     dev = BLEShearwater()
     await dev.connect()
-    dlog = DiveLog(dev)
-    await dlog.read(bytes([0x80, 0x07, 0x9E, 0x20]))
+    divelog = LogDownloader(dev)
+    divelog.subscribe(log_entry_received)
+    await divelog.download(bytes([0x80, 0x07, 0x9E, 0x20]))
+    await asyncio.sleep(2)
     await dev.close_connection()
 
 
@@ -671,45 +685,6 @@ def packets_to_9bit_bin_chunks(data: bytes) -> list[str]:
     bits_string = "".join(bin_array)
     chunks = [bits_string[i : i + 9] for i in range(0, len(bits_string), 9)]
     return chunks
-
-
-class LogReader:
-    def __init__(self):
-        self.__raw_accumulator = bytearray()
-        self.__subscribers = []
-        self.__runs = bytearray()
-        self.__last_log = bytes([0] * 32)
-
-    def subscribe(self, callback: Callable):
-        self.__subscribers.append(callback)
-
-    def unsubscribe(self, callback: Callable):
-        self.__subscribers.remove(callback)
-
-    def __notify_subs(self, logs: list[bytes]):
-        for callback in self.__subscribers:
-            for log in logs:
-                callback(log)
-
-    def __extract_logs(self, packet: bytes) -> list[bytes]:
-        chunks = packets_to_9bit_bin_chunks(packet)  # data always comes in 144 bytes
-        self.__runs += expand_to_runs(chunks)  # runs can vary in size
-        logs: list[bytes] = []
-        while len(self.__runs) >= 32:
-            encoded_block = self.__runs[:32]
-            self.__runs = self.__runs[32:]
-            log_entry = xor_blocks(encoded_block, self.__last_log)
-            self.__last_log = log_entry
-            logs.append(log_entry)
-        return logs
-
-    def data_arrived(self, data: bytes):
-        self.__raw_accumulator += data[2:]
-        if self.__raw_accumulator[-1] == END_OF_FRAME:
-            decoded = slip_decode(self.__raw_accumulator[6:])
-            self.__raw_accumulator = bytearray()
-            logs = self.__extract_logs(decoded)
-            self.__notify_subs(logs)
 
 
 if __name__ == "__main__":
