@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted } from 'vue';
-const props = defineProps(['dive', 'picked']);
+const props = defineProps(['dive', 'picked', 'downloaded']);
 function getFontSize(strDiveNo) {
   const diveNo = parseInt(strDiveNo);
   if (diveNo >= 10000) {
@@ -72,7 +72,8 @@ onMounted(() => {
 </script>
 <template>
   <div class="dive">
-    <div class="bookmark" v-if="picked"></div>
+    <div class="bookmark" v-if="picked && !downloaded"></div>
+    <div class="checkmark" v-if="downloaded"></div>
     <div class="row center">
       <h1>Dive </h1>&nbsp;
       <h1 :style="{'font-size': getFontSize(dive.diveNo)}" class="text-right">{{dive.diveNo}}</h1>
@@ -171,6 +172,18 @@ onMounted(() => {
     border-right: 14px solid rgba(150, 0, 0, 0.8); 
     border-bottom: 10px solid transparent; 
     box-sizing: border-box;
+  }
+
+  .checkmark {
+    position: absolute;
+    top: -5px;
+    left: 10px;
+    height: 40px; 
+    width: 20px; 
+    border-bottom: 10px solid green; 
+    border-right: 10px solid green; 
+    transform: rotate(45deg); 
+    box-shadow: 5px 2px 5px rgba(0, 0, 0, 0.5);
   }
 
 </style>
