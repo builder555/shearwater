@@ -1,14 +1,18 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import DiveCard from './components/dive-card.vue';
 import { DiveManifest } from './device/divemanifest';
 import { BLEShearwater } from './device/ble';
-import { LogDownloader, LogDecoder } from './device/divelogs';
-
+import { LogDownloader, LogDecoder, bytesToHex } from './device/divelogs';
+import WebpImage from './components/webp-image.vue';
 const dives = ref([]);
 
 const picked = ref([]);
+const downloaded = ref([]);
 const progress = ref(0);
+const isBTEnabled = ref(false);
+const isConnected = ref(false);
+const dev = new BLEShearwater();
 
 function toggleDivePicked(dive) {
   if (picked.value.includes(dive.diveNo)) {
@@ -17,17 +21,78 @@ function toggleDivePicked(dive) {
     picked.value.push(dive.diveNo);
   }
 }
-function toggleAllDives(event) {
-  if (event.target.checked) {
+
+function toggleAllDives(select) {
+  if (select) {
     picked.value = dives.value.map((dive) => dive.diveNo);
   } else {
     picked.value = [];
   }
 }
-const isBTEnabled = ref(false);
-const isConnected = ref(false);
+function formatLogs(logs){
+  let openingData = {};
+  let closingData = {};
+  const dive = {
+    headers: [
+      'depth',
+      'next_stop_depth',
+      'tts',
+      'avg_ppo2',
+      'o2_percent',
+      'he_percent',
+      'next_stop_or_ndl_time',
+      'battery_percent_remaining',
+      'statuses',
+      'o2_sensor_1_mv',
+      'water_temp',
+      'o2_sensor_2_mv',
+      'o2_sensor_3_mv',
+      'battery_voltage_x100',
+      'ppo2_setpoint',
+      'ai_t2_data',
+      'gtr',
+      'cns',
+      'deco_ceiling',
+      'gf99',
+      'at_plus_5',
+      'ai_t1_data',
+      'sac',
+    ],
+    data: []
+  };
+  const openingTypes = [0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17];
+  const closingTypes = [0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0xFF];
+  for(const log of logs) {
+    if (openingTypes.includes(log.log_type)) {
+      openingData = {...openingData, ...log};
+    } else if (closingTypes.includes(log.log_type)) {
+      closingData = {...closingData, ...log};
+    } else {
+      const log_row = []
+      for(const header of dive.headers) {
+        log_row.push(log[header]);
+      }
+      dive.data.push(log_row);
+    }
+  }
+  return {
+    openingData,
+    dive,
+    closingData
+  }
+}
 
-const dev = new BLEShearwater();
+function saveToLocalStorage(id, data) {
+  localStorage.setItem(id, JSON.stringify(data));
+}
+
+function loadFromLocalStorage(id) {
+  return JSON.parse(localStorage.getItem(id));
+}
+
+function isDiveDownloaded(id) {
+  return !!localStorage.getItem(`dive-${id}`);
+}
 
 async function connect() {
   await dev.connect();
@@ -45,7 +110,6 @@ async function download() {
   const decoder = new LogDecoder();
   const divesToDownload = dives.value.filter((d) => picked.value.includes(d.diveNo));
   for(const dive of divesToDownload) {
-    console.log('downloading', dive);
     const logs = [];
     downloader.subscribe((data) => {
       const decoded = decoder.decode(data);
@@ -54,19 +118,50 @@ async function download() {
       }
     });
     await downloader.download(dive.recordAddressStart);
-    console.log(logs);
+    const formatted = formatLogs(logs);
+    formatted.id = bytesToHex(dive.recordAddressStart);
+    saveToLocalStorage(`dive-${formatted.id}`, formatted);
   }
 }
+
 onMounted(() => {
   isBTEnabled.value = dev.isBluetoothEnabled();
+  dives.value = loadFromLocalStorage('dive-manifest') || [];
+});
+watch(dives, () => {
+  saveToLocalStorage('dive-manifest', dives.value);
+  dives.value.map((dive) => {
+    let diveId = '';
+    // console.log(dive.recordAddressStart);
+    const address = dive.recordAddressStart;
+    for (const byte in address) {
+      // console.log(byte);
+      diveId += address[byte].toString(16).padStart(2, '0');
+    }
+    
+    dive.id = diveId;
+    if (isDiveDownloaded(dive.id)) {
+      downloaded.value.push(dive.id);
+    }
+  })
 });
 </script>
 
 <template>
-  <header :style="{ 'background': `linear-gradient(to right, #76c7c0 ${progress}%, #00aeef ${progress}%)`}">
+  <header
+    :style="{
+      'background': `linear-gradient(to right, #76c7c0 ${progress}%, #00aeef ${progress}%)`
+    }"
+  >
     <div v-if="isConnected">
       Connected to <strong>{{ dev.name }}</strong>
-      displaying {{ dives.length }} dives.
+      <button
+        class="outline"
+        :class="{ 'selected': picked.length === dives.length }"
+        style="margin-left: 10px;"
+        @click="toggleAllDives(picked.length !== dives.length)"
+      >Select All</button>
+      <button @click="download">Download</button>
     </div>
     <div v-else-if="isBTEnabled">
       <button id="connect" @click="connect">Connect Dive Computer</button>
@@ -75,19 +170,11 @@ onMounted(() => {
       <p>Bluetooth not enabled</p>
     </div>
   </header>
-
   <main>
+    <div v-if="dives.length < 1 && !isConnected" style="display:flex; justify-content: center">
+      <WebpImage webpUrl="@/assets/perdix2.webp" altUrl="@/assets/perdix2.png" style="max-width: 600px"/>
+    </div>
     <div v-if="dives.length > 0">
-      <input
-        type="checkbox"
-        :checked="dives.length === picked.length"
-        @change="toggleAllDives"
-        id="pick-all"
-      >
-      <label for="pick-all">
-        Download all
-      </label>
-      <button @click="download">Download</button>
     </div>
     <div class="dives">
       <DiveCard 
@@ -95,6 +182,7 @@ onMounted(() => {
         :key="dive.diveNo"
         :dive="dive"
         :picked="picked.includes(dive.diveNo)"
+        :downloaded="downloaded.includes(dive.id)"
         @click="toggleDivePicked(dive)"
       />
     </div>
@@ -102,6 +190,22 @@ onMounted(() => {
 </template>
 
 <style scoped>
+  button.outline {
+    box-sizing: border-box;
+    background-color: transparent;
+    border: 1px solid #222;
+    font-size: 1em;
+    color: #222;
+    cursor: pointer;
+  }
+  button.outline.selected {
+    background-color: #222;
+    color: #fff;
+  }
+  button.outline:hover {
+    background-color: rgba(50,50,50,0.6);
+    color: #fff;
+  }
   .dives {
     display: flex;
     flex-wrap: wrap;
