@@ -13,7 +13,7 @@ function getNum(data) {
     return data.reduce((acc, byte) => (acc << 8) | byte, 0);
 }
 
-function bytesToHex(data, delimiter = '') {
+export function bytesToHex(data, delimiter = '') {
     return Array.from(data).map(byte => byte.toString(16).padStart(2, '0')).join(delimiter);
 }
 
@@ -46,7 +46,7 @@ export class LogDecoder {
         if (!(recordType in this._decoders)) {
             return bytesToHex(data);
         }
-        return this._decoders[recordType](data);
+        return {log_type: recordType, ...this._decoders[recordType](data)}
     }
 
     decodeOpenRecord10(data) {
