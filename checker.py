@@ -359,7 +359,7 @@ class LogDecoder:
             "dive_number": get_num(data[2:4]),
             "gf_low": get_num(data[4:5]),
             "gf_high": get_num(data[5:6]),
-            "tts": get_num(data[6:8]),
+            "surface_time": get_num(data[6:8]),
             "depth_units": get_num(data[8:9]),
             "battery_voltage_x10": get_num(data[9:10]),
             "cns": get_num(data[10:12]),
