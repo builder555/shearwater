@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue';
 import DiveCard from './components/dive-card.vue';
+import DiveDetails from './components/dive-details.vue';
 import { DiveManifest } from './device/divemanifest';
 import { BLEShearwater } from './device/ble';
 import { LogDownloader, LogDecoder, bytesToHex } from './device/divelogs';
@@ -13,6 +14,7 @@ const progress = ref(0);
 const isBTEnabled = ref(false);
 const isConnected = ref(false);
 const dev = new BLEShearwater();
+const selectedDive = ref(null);
 
 function toggleDivePicked(dive) {
   if (picked.value.includes(dive.diveNo)) {
@@ -20,6 +22,11 @@ function toggleDivePicked(dive) {
   } else {
     picked.value.push(dive.diveNo);
   }
+}
+
+function clickedManifestCard(dive) {
+  if (downloaded.value.includes(dive.id)) selectedDive.value = loadFromLocalStorage(`dive-${dive.id}`);
+  else toggleDivePicked(dive);
 }
 
 function toggleAllDives(select) {
@@ -33,32 +40,29 @@ function formatLogs(logs){
   let openingData = {};
   let closingData = {};
   const dive = {
-    headers: [
-      'depth',
-      'next_stop_depth',
-      'tts',
-      'avg_ppo2',
-      'o2_percent',
-      'he_percent',
-      'next_stop_or_ndl_time',
-      'battery_percent_remaining',
-      'statuses',
-      'o2_sensor_1_mv',
-      'water_temp',
-      'o2_sensor_2_mv',
-      'o2_sensor_3_mv',
-      'battery_voltage_x100',
-      'ppo2_setpoint',
-      'ai_t2_data',
-      'gtr',
-      'cns',
-      'deco_ceiling',
-      'gf99',
-      'at_plus_5',
-      'ai_t1_data',
-      'sac',
-    ],
-    data: []
+    depth: [],
+    next_stop_depth: [],
+    tts: [],
+    avg_ppo2: [],
+    o2_percent: [],
+    he_percent: [],
+    next_stop_or_ndl_time: [],
+    battery_percent_remaining: [],
+    statuses: [],
+    o2_sensor_1_mv: [],
+    water_temp: [],
+    o2_sensor_2_mv: [],
+    o2_sensor_3_mv: [],
+    battery_voltage_x100: [],
+    ppo2_setpoint: [],
+    ai_t2_data: [],
+    gtr: [],
+    cns: [],
+    deco_ceiling: [],
+    gf99: [],
+    at_plus_5: [],
+    ai_t1_data: [],
+    sac: [],
   };
   const openingTypes = [0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17];
   const closingTypes = [0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0xFF];
@@ -68,13 +72,13 @@ function formatLogs(logs){
     } else if (closingTypes.includes(log.log_type)) {
       closingData = {...closingData, ...log};
     } else {
-      const log_row = []
-      for(const header of dive.headers) {
-        log_row.push(log[header]);
+      for(const header of Object.keys(dive)) {
+        if (log[header]) dive[header].push(log[header]);
       }
-      dive.data.push(log_row);
     }
   }
+  delete openingData.log_type;
+  delete closingData.log_type;
   return {
     openingData,
     dive,
@@ -132,10 +136,8 @@ watch(dives, () => {
   saveToLocalStorage('dive-manifest', dives.value);
   dives.value.map((dive) => {
     let diveId = '';
-    // console.log(dive.recordAddressStart);
     const address = dive.recordAddressStart;
     for (const byte in address) {
-      // console.log(byte);
       diveId += address[byte].toString(16).padStart(2, '0');
     }
     
@@ -171,10 +173,18 @@ watch(dives, () => {
     </div>
   </header>
   <main>
-    <div v-if="dives.length < 1 && !isConnected" style="display:flex; justify-content: center">
-      <WebpImage webpUrl="@/assets/perdix2.webp" altUrl="@/assets/perdix2.png" style="max-width: 600px"/>
+    <div
+      v-if="dives.length < 1 && !isConnected"
+      style="display:flex; justify-content: center"
+    >
+      <WebpImage
+        webpUrl="@/assets/perdix2.webp"
+        altUrl="@/assets/perdix2.png"
+        style="max-width: 600px"
+      />
     </div>
-    <div v-if="dives.length > 0">
+    <div v-if="selectedDive" class="dive-details">
+      <DiveDetails :dive="selectedDive" />
     </div>
     <div class="dives">
       <DiveCard 
@@ -183,13 +193,22 @@ watch(dives, () => {
         :dive="dive"
         :picked="picked.includes(dive.diveNo)"
         :downloaded="downloaded.includes(dive.id)"
-        @click="toggleDivePicked(dive)"
+        @click="clickedManifestCard(dive)"
       />
     </div>
   </main>
 </template>
 
 <style scoped>
+  .dive-details {
+    /* position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%; */
+    background: #fff;
+    /* z-index: 1000; */
+  }
   button.outline {
     box-sizing: border-box;
     background-color: transparent;
