@@ -1,8 +1,10 @@
 <script setup>
-defineProps(['dive']);
+import apexchart from 'vue3-apexcharts';
+import { ref } from 'vue';
+const props = defineProps(['dive']);
 function getDate(timestamp) {
-      return new Date(timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
-    }
+  return new Date(timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
+}
 
 function mapRawOpeningToReadable(dive) {
   function getWaterType(density){
@@ -67,7 +69,21 @@ function mapRawOpeningToReadable(dive) {
   }
   return mapped;
 }
+const series = ref([
+  {
+    name: 'Depth',
+    data: props.dive.dive.depth.map((d) => d/10),
+  },
+]);
+const options = {
+        chart: {
+          id: 'vuechart-example'
+        },
+        yaxis: {
+          reversed: true,
+        }
+      };
 </script>
 <template>
-  <div>{{ mapRawOpeningToReadable(dive.openingData) }}</div>
+  <apexchart width="500" type="line" :options="options" :series="series"></apexchart>
 </template>
