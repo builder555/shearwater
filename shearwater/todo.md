@@ -9,7 +9,7 @@
     - When BT not available:
         - [x] message to enable web bluetooth
 - [x] activate the "connect" button
-- [ ] add downloader/reader log classes to JS
+- [x] add downloader/reader log classes to JS
 - [ ] find a charting library
 
 - [ ] display charts for a dive:
@@ -285,15 +285,20 @@
             - [ ] log_version
             - [ ] product
 
-- [ ] add ability to download selected dives
+- [x] add ability to download selected dives
 - [ ] ensure proper UX:
     - [ ] display spinner when connecting to dive computer
     - [ ] display progress bar when downloading logs
     - [ ] display a message when no dives are stored
     - [ ] compact view for log manifest
     - [ ] use color to indicate computer connected or not
+    - [ ] automatically show when computer is disconnected
 - [ ] add hint how to enable web bluetooth
 - [ ] store logs locally: store undownloaded manifest by computer ID
 - [ ] able to manually add logs
 - [ ] able to edit logs
-- [ ] able to export dive logs to csv or json or DL7
+- [ ] able to export dive logs to csv/json/DL7
+- [ ] add settings:
+    - [ ] select depth units (m/ft)
+    - [ ] select temperature units (C/F)
+    - [ ] select pressure units (psi/bar)
