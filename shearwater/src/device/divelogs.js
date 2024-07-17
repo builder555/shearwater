@@ -54,7 +54,7 @@ export class LogDecoder {
             dive_number: getNum(data.slice(2, 4)),
             gf_low: getNum(data.slice(4, 5)),
             gf_high: getNum(data.slice(5, 6)),
-            tts: getNum(data.slice(6, 8)),
+            surface_time: getNum(data.slice(6, 8)),
             depth_units: getNum(data.slice(8, 9)),
             battery_voltage_x10: getNum(data.slice(9, 10)),
             cns: getNum(data.slice(10, 12)),
