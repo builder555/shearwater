@@ -91,7 +91,7 @@ onMounted(() => {
       <div class="col">
       </div>
       <div class="col align-right">
-        <h3>Depth: {{dive.avgDepthX10}}{{dive.depthUnits[0]}}</h3>
+        <h3>Depth: {{dive.maxDepthX10/10}}{{dive.depthUnits[0]}}</h3>
         <p>{{dive.computerMode}}</p>
       </div>  
     </div>
