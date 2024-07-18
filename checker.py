@@ -1,3 +1,4 @@
+# FOR NOW THIS ONLY WORKS WITH LOG VERSION 14
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice

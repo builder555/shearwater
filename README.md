@@ -1,5 +1,9 @@
 ### This is very much a work in progress. Some of these notes may be completely wrong.
 
+### Notes
+
+The decoders work only with log version 14 for now.
+
 ### Findings so far:
 
 * Shearwater uses [UDS protocol](https://en.wikipedia.org/wiki/Unified_Diagnostic_Services)
