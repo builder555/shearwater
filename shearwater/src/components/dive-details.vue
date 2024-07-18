@@ -1,9 +1,19 @@
 <script setup>
 import apexchart from 'vue3-apexcharts';
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+
 const props = defineProps(['dive']);
+
 function getDate(timestamp) {
   return new Date(timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
+}
+
+function getHhMmSs(s) {
+    const date = new Date(s * 1000);
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+    return `${hours}h ${minutes}m ${seconds}s`;
 }
 
 function mapRawOpeningToReadable(dive) {
@@ -15,7 +25,9 @@ function mapRawOpeningToReadable(dive) {
   const depth_units = ['m', 'ft'][dive.depth_units];
   const deco_model = ['GF', 'VPM-B', 'VPMB-B/GFS', 'DCIEM'][dive.deco_model];
   const battery_type = ['', '1.5V Alkaline', '1.5V Lithium', '1.2VV NiMH', '3.6V Saft', '3.7V Li-Ion'][dive.battery_type];
-  const temp_units = {2: 'C', 3: 'F'}[dive.temp_units]
+  const temp_units_configured = {2: 'C', 3: 'F'}[dive.temp_units];
+  // shearwater returns temperature in C for metric depth units and in F for imperial
+  const temp_units = ['C', 'F'][dive.depth_units];
 
   const mapped = {
     ...dive,
@@ -66,24 +78,152 @@ function mapRawOpeningToReadable(dive) {
     water_type: getWaterType(dive.salinity),
     battery_type,
     temp_units,
+    temp_units_configured,
   }
   return mapped;
 }
-const series = ref([
+
+const diveInfo = computed(() => mapRawOpeningToReadable(props.dive.openingData));
+
+const chart = ref(null);
+
+const seriesData = computed(() => [
   {
     name: 'Depth',
     data: props.dive.dive.depth.map((d) => d/10),
   },
+  {
+    name: 'SAC Rate',
+    data: props.dive.dive.sac.map((s) => s > 0xFFF0 ? 0 : s / 100),
+  },
+  {
+    name: 'Water Temperature',
+    data: props.dive.dive.water_temp,
+  },
+  {
+    name: 'PPO2',
+    data: props.dive.dive.avg_ppo2.map((d) => d/100),
+  },
+  {
+    name: 'AI T1',
+    data: props.dive.dive.ai_t1_data.map((d) => d < 0xFFF0 ? (d & 0xFFF) * 2 : 0),
+  },
+  {
+    name: 'AI T2',
+    data: props.dive.dive.ai_t2_data.map((d) => d < 0xFFF0 ? (d & 0xFFF) * 2 : 0),
+  },
 ]);
-const options = {
-        chart: {
-          id: 'vuechart-example'
-        },
-        yaxis: {
-          reversed: true,
-        }
-      };
+
+const yaxisData = computed(() => [
+    {
+      reversed: true,
+      title : {
+        text: `Depth (${diveInfo.value.depth_units})`,
+      },
+      seriesName: 'Depth',
+    },
+    {
+      seriesName: 'SAC Rate',
+      title : {
+        text: 'SAC Rate (psi/min)',
+      },
+      opposite: true,
+    },
+    {
+      seriesName: 'Water Temperature',
+      title : {
+        text: `Water Temperature (${diveInfo.value.temp_units})`,
+      },
+      opposite: true,
+    },
+    {
+      seriesName: 'PPO2',
+      title : {
+        text: 'PPO2 (ATA)',
+      },
+      opposite: true,
+    },
+    {
+      seriesName: 'AI T1',
+      title : {
+        text: 'AI T1 (psi)',
+      },
+      opposite: true,
+    },
+    {
+      seriesName: 'AI T2',
+      title : {
+        text: 'AI T2 (psi)',
+      },
+      opposite: true,
+    },
+]);
+
+const series = computed(() => visibleSeries.value.map((name) => seriesData.value.find((s) => s.name === name)));
+
+const options = computed(() =>({
+  chart: {
+    id: 'vuechart-example',
+    animations: {
+      enabled: false,
+    },
+  },
+  dataLabels: {
+    enabled: false,
+  },
+  stroke: {
+    curve: 'smooth',
+    width: 1.5,
+  },
+  legend: {
+    show: true,
+    position: "top",
+    onItemClick: {
+      toggleDataSeries: true,
+    }
+  },
+  yaxis: visibleSeries.value.map((name) => yaxisData.value.find((s) => s.seriesName === name)),
+  xaxis: {
+    type: 'numeric',
+    labels: {
+      formatter: (value) => {
+        const sampleRate = props.dive.openingData.log_sample_rate_ms / 1000;
+        return getHhMmSs(value * sampleRate);
+      },
+    },
+  },
+}));
+
+const visibleSeries = ref(['Depth']);
+
+watch(props.dive, () => {
+  chart.value.updateOptions(options.value);
+  chart.value.updateSeries(series.value);
+});
+
+function toggleSeries(name) {
+  if (visibleSeries.value.includes(name)) {
+    visibleSeries.value = visibleSeries.value.filter((s) => s !== name);
+  } else {
+    visibleSeries.value.push(name);
+  }
+  chart.value.updateOptions(options.value);
+  chart.value.updateSeries(series.value);
+}
 </script>
 <template>
-  <apexchart width="500" type="line" :options="options" :series="series"></apexchart>
+  <apexchart
+    ref="chart"
+    width="800"
+    type="line"
+    :options="options"
+    :series="series"
+  />
+  <button
+    v-for="s in seriesData"
+    :key="s.name"
+    class="outline"
+    :class="{'selected' : visibleSeries.includes(s.name)}"
+    @click="toggleSeries(s.name)"
+  >{{s.name}}</button>
 </template>
