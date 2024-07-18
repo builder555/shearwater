@@ -209,22 +209,6 @@ watch(dives, () => {
     background: #fff;
     /* z-index: 1000; */
   }
-  button.outline {
-    box-sizing: border-box;
-    background-color: transparent;
-    border: 1px solid #222;
-    font-size: 1em;
-    color: #222;
-    cursor: pointer;
-  }
-  button.outline.selected {
-    background-color: #222;
-    color: #fff;
-  }
-  button.outline:hover {
-    background-color: rgba(50,50,50,0.6);
-    color: #fff;
-  }
   .dives {
     display: flex;
     flex-wrap: wrap;
