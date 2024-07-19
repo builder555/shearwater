@@ -63,6 +63,24 @@ Response: 03027196c0
 
 ![ui](/assets/screenshot.png)
 
+### Prerequisites
+
+- Node.js
+- npm
+- git
+
+### Setup
+
+```shell
+git clone https://github.com/builder555/shearwater.git
+cd shearwater/shearwater
+npm install
+npm run dev
+```
+
+Navigate to http://localhost:5173
+
+
 ### TODO
 
 
