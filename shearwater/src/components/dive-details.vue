@@ -179,9 +179,10 @@ const options = computed(() =>({
     show: true,
     position: "top",
     onItemClick: {
-      toggleDataSeries: true,
+      toggleDataSeries: false,
     }
   },
+  colors: ['#ce0707', '#3faa24', '#ef7b00', '#992cf8', '#3877eb', '#00c8ff'],
   yaxis: visibleSeries.value.map((name) => yaxisData.value.find((s) => s.seriesName === name)),
   xaxis: {
     type: 'numeric',
