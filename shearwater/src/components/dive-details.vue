@@ -160,6 +160,14 @@ const yaxisData = computed(() => [
 ]);
 
 const series = computed(() => visibleSeries.value.map((name) => seriesData.value.find((s) => s.name === name)));
+const colorMap = {
+  'Depth': '#ce0707',
+  'SAC Rate': '#3faa24',
+  'Water Temperature': '#ef7b00',
+  'PPO2': '#992cf8',
+  'AI T1': '#3877eb',
+  'AI T2': '#00c8ff',
+};
 
 const options = computed(() =>({
   chart: {
@@ -182,7 +190,7 @@ const options = computed(() =>({
       toggleDataSeries: false,
     }
   },
-  colors: ['#ce0707', '#3faa24', '#ef7b00', '#992cf8', '#3877eb', '#00c8ff'],
+  colors: [({ seriesIndex }) => colorMap[visibleSeries.value[seriesIndex]]],
   yaxis: visibleSeries.value.map((name) => yaxisData.value.find((s) => s.seriesName === name)),
   xaxis: {
     type: 'numeric',
@@ -225,6 +233,15 @@ function toggleSeries(name) {
     :key="s.name"
     class="outline"
     :class="{'selected' : visibleSeries.includes(s.name)}"
+    :style="{ 
+        'border-color': colorMap[s.name],
+        'background-color': visibleSeries.includes(s.name) ? colorMap[s.name] : 'transparent'
+      }"
     @click="toggleSeries(s.name)"
   >{{s.name}}</button>
 </template>
+<style scoped>
+  button.outline:hover {
+    color: #ccc;
+  }
+</style>
