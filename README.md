@@ -372,12 +372,14 @@ Navigate to http://localhost:5173
 
 - [x] add ability to download selected dives
 - [ ] ensure proper UX:
+    - [x] progress bar when downloading manifest
     - [ ] display spinner when connecting to dive computer
     - [ ] display progress bar when downloading logs
     - [ ] display a message when no dives are stored
     - [ ] compact view for log manifest
     - [ ] use color to indicate computer connected or not
     - [ ] automatically show when computer is disconnected
+    - [ ] filter/search dives (depth, location, OC/CC, OW/Cave, Rec/Tec)
 - [ ] add hint how to enable web bluetooth
 - [ ] store logs locally: store undownloaded manifest by computer ID
 - [ ] able to manually add logs
