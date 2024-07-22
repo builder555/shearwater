@@ -63,7 +63,6 @@ li img {
   display:block;
 }
 .box {
-  /* margin-top: ; */
   max-width: 600px;
   width: 95%;
   padding: 20px;
