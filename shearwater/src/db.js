@@ -8,9 +8,10 @@ function existsInLocalStorage(id) {
     return !!localStorage.getItem(id);
 }
 export async function loadManifest() {
-    const dives = loadFromLocalStorage('dive-manifest') || [];
-    dives.forEach(dive => {
+    const dives = loadFromLocalStorage('dive-manifest') || {};
+    Object.entries(dives).forEach(([, dive]) => {
         dive.isDownloaded = existsInLocalStorage(`dive-${dive.id}`);
+        dive.canDownload = false;
     });
     return dives;
 }
