@@ -1,12 +1,13 @@
 <script setup>
-import { onMounted } from 'vue';
-const props = defineProps(['dive', 'picked', 'downloaded']);
-function getFontSize(strDiveNo) {
-  const diveNo = parseInt(strDiveNo);
-  if (diveNo >= 10000) {
+import { onMounted, computed } from 'vue';
+const props = defineProps(['dive']);
+const isDiveAvailable = computed(() => props.dive.isDownloaded || props.dive.canDownload);
+
+function getFontSize(text) {
+  if (text.length >= 5) {
       return '1.75em';
   }
-  if (diveNo >= 1000) {
+  if (text.length >= 4) {
       return '2.2em';
   }
   return '2.5em';
@@ -58,7 +59,7 @@ function drawTime(ctx, radius, minutes) {
 }
 
 function drawDiveClock(dive) {
-  const canvas = document.getElementById(`clock-${dive.diveNo}`);
+  const canvas = document.getElementById(`clock-${dive.id}`);
   const ctx = canvas.getContext('2d');
   const radius = canvas.height / 2;
   ctx.translate(radius, radius);
@@ -71,12 +72,15 @@ onMounted(() => {
 });
 </script>
 <template>
-  <div class="dive">
-    <div class="bookmark" v-if="picked && !downloaded"></div>
-    <div class="checkmark" v-if="downloaded"></div>
+  <div
+    class="dive"
+    :class="{'unavailable': !isDiveAvailable}"
+  >
+    <div class="bookmark" v-if="dive.isSelected"></div>
+    <div class="checkmark" v-if="dive.isDownloaded"></div>
     <div class="row center">
       <h1>Dive </h1>&nbsp;
-      <h1 :style="{'font-size': getFontSize(dive.diveNo)}" class="text-right">{{dive.diveNo}}</h1>
+      <h1 :style="{'font-size': getFontSize(dive.diveNo.toString())}" class="text-right">{{dive.diveNo}}</h1>
     </div>
     <hr/>
     <div class="row">
@@ -91,7 +95,7 @@ onMounted(() => {
       <div class="col">
       </div>
       <div class="col align-right">
-        <h3>Depth: {{dive.maxDepthX10/10}}{{dive.depthUnits[0]}}</h3>
+        <h3>Depth: {{dive.maxDepth}}{{dive.depthUnits[0]}}</h3>
         <p>{{dive.computerMode}}</p>
       </div>  
     </div>
@@ -100,7 +104,7 @@ onMounted(() => {
     >
       <canvas
         class="divetime"
-        :id="`clock-${dive.diveNo}`"
+        :id="`clock-${dive.id}`"
         width="50"
         height="50"
       ></canvas>
@@ -173,7 +177,6 @@ onMounted(() => {
     border-bottom: 10px solid transparent; 
     box-sizing: border-box;
   }
-
   .checkmark {
     position: absolute;
     top: -5px;
@@ -186,4 +189,8 @@ onMounted(() => {
     box-shadow: 5px 2px 5px rgba(0, 0, 0, 0.5);
   }
 
+  .unavailable {
+    opacity: 0.5;
+    cursor: default;
+  }
 </style>

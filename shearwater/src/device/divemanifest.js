@@ -33,8 +33,9 @@ function decodeManifest(data) {
       6: 'OC Rec',
       7: 'Freedive',
     };
-    
     const dive = {
+      isDownloaded: false,
+      canDownload: true,
       code: Array.from(data.slice(0, 2)).map(byte => byte.toString(16).padStart(2, '0')).join(''),
       diveNo: getNum(data.slice(2, 4)),
       diveStart: getDate(getNum(data.slice(4, 8))),
@@ -43,17 +44,22 @@ function decodeManifest(data) {
       maxDepthX10: getNum(data.slice(16, 18)),
       avgDepthX10: getNum(data.slice(18, 20)),
       recordAddressStart: data.slice(20, 24),
-      recordAddressEnd: Array.from(data.slice(24, 28)).map(byte => byte.toString(16).padStart(2, '0')).join(''),
+      recordAddressEnd: data.slice(24, 28),
       depthUnits: depthUnits[getNum(data.slice(28, 29))],
       tempUnits: getNum(data.slice(29, 30)), // ignore
       computerMode: computerMode[getNum(data.slice(30, 31))],
       manifestVersion: getNum(data.slice(31, 32)), // 0 - original, 1 - adds dive computer mode
     };
     const dateStart = new Date(dive.diveStart);
+    const hexAddressEnd = Array.from(dive.recordAddressEnd).map(byte => byte.toString(16).padStart(2, '0')).join('');
+    const hexAddressStart = Array.from(dive.recordAddressStart).map(byte => byte.toString(16).padStart(2, '0')).join('');
+    dive.id =`${hexAddressStart}-${hexAddressEnd}`;
     dive.startDateFmt = dateStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     dive.startTimeFmt = dateStart.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     dive.diveDurationFmt = getHhMmSs(dive.diveDuration);
-      
+    dive.maxDepth = dive.maxDepthX10 / 10;
+    dive.avgDepth = dive.avgDepthX10 / 10;
+    
     return dive;
 }
 
@@ -73,7 +79,7 @@ function isSubArray(subArray, array) {
     return false;
 }
 
-export class DiveManifest {
+export class DiveManifestReader {
     constructor(dev) {
       this._dev = dev;
       this._isAcked = false;

@@ -1,45 +1,60 @@
-import { SERVICE_UUID, CHARACTERISTIC_UUID } from "./constants";
-import { slipEncode } from "./SLIP";
+import { SERVICE_UUID, CHARACTERISTIC_UUID } from './constants';
+import { slipEncode } from './SLIP';
+
+export async function checkBluetoothEnabled() {
+    return await navigator?.bluetooth?.getAvailability();
+}
 
 export class BLEShearwater {
     constructor() {
-        this.device = null;
-        this.server = null;
-        this.service = null;
-        this.characteristic = null;
-        this.callback = null;
-        this.name = "";
-    }
-
-    isBluetoothEnabled() {
-        return typeof navigator?.bluetooth?.requestDevice != 'undefined';
+        this._device = null;
+        this._server = null;
+        this._service = null;
+        this._characteristic = null;
+        this._onDataCallback = null;
+        this._onDisconnectCallback = null;
+        this.name = '';
     }
 
     async connect() {
-        this.device = await navigator.bluetooth.requestDevice({
-            filters: [{ services: [SERVICE_UUID] }]
+        this._device = await navigator.bluetooth.requestDevice({
+            filters: [{ services: [SERVICE_UUID] }],
         });
-        this.name = this.device.name;
-        this.server = await this.device.gatt.connect();
-        this.service = await this.server.getPrimaryService(SERVICE_UUID);
-        this.characteristic = await this.service.getCharacteristic(CHARACTERISTIC_UUID);
-        await this.characteristic.startNotifications();
-        this.characteristic.addEventListener('characteristicvaluechanged', this.onCharacteristicValueChanged.bind(this));
-    }
-    async disconnect() {
-        await this.characteristic.removeEventListener('characteristicvaluechanged', this.onCharacteristicValueChanged.bind(this));
-        await this.sendData(new Uint8Array([0x2E, 0x90, 0x20, 0x00]))
-        await this.server.disconnect();
-        this.name = "";
+        this._device.addEventListener('gattserverdisconnected', this._onDisconnected.bind(this));
+        this.name = this._device.name;
+        this._server = await this._device.gatt.connect();
+        this._service = await this._server.getPrimaryService(SERVICE_UUID);
+        this._characteristic = await this._service.getCharacteristic(CHARACTERISTIC_UUID);
+        await this._characteristic.startNotifications();
+        this._characteristic.addEventListener('characteristicvaluechanged', this._onCharacteristicValueChanged.bind(this));
     }
 
-    onCharacteristicValueChanged(event) {
+    _onDisconnected() {
+        this.name = '';
+        this._device = null;
+        this._server = null;
+        this._service = null;
+        this._characteristic = null;
+        if (this._onDisconnectCallback) this._onDisconnectCallback();
+    }
+
+    onDisconnect(callback) {
+        this._onDisconnectCallback = callback;
+    }
+    
+    async disconnect() {
+        await this._characteristic.removeEventListener('characteristicvaluechanged', this._onCharacteristicValueChanged.bind(this));
+        await this.sendData(new Uint8Array([0x2E, 0x90, 0x20, 0x00]));
+        await this._server.disconnect();
+    }
+
+    _onCharacteristicValueChanged(event) {
         const data = new Uint8Array(event.target.value.buffer);
-        if (this.callback) this.callback(data);
+        if (this._onDataCallback) this._onDataCallback(data);
     }
 
     subscribe(callback) {
-        this.callback = callback;
+        this._onDataCallback = callback;
     }
 
     unsubscribe() {
@@ -47,12 +62,12 @@ export class BLEShearwater {
     }
 
     async sendData(data) {
-        if (!this.device.gatt.connected) {
+        if (!this._device.gatt.connected) {
             await this.connect();
         }
-        const prepend = new Uint8Array([0x01, 0x00, 0xFF, 0x01, data.length + 1, 0x00])
+        const prepend = new Uint8Array([0x01, 0x00, 0xFF, 0x01, data.length + 1, 0x00]);
         const dataToSend = new Uint8Array([...prepend, ...data]);
         const encodedData = slipEncode(dataToSend);
-        await this.characteristic.writeValue(encodedData);
+        await this._characteristic.writeValue(encodedData);
     }
 }
