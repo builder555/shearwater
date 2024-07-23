@@ -470,3 +470,53 @@ export class LogDownloader {
         this._dev.unsubscribe(this._onData.bind(this));
     }
 }
+
+export function formatLogs(logs){
+  let openingData = {};
+  let closingData = {};
+  const dive = {
+    depth: [],
+    next_stop_depth: [],
+    tts: [],
+    avg_ppo2: [],
+    o2_percent: [],
+    he_percent: [],
+    next_stop_or_ndl_time: [],
+    battery_percent_remaining: [],
+    statuses: [],
+    o2_sensor_1_mv: [],
+    water_temp: [],
+    o2_sensor_2_mv: [],
+    o2_sensor_3_mv: [],
+    battery_voltage_x100: [],
+    ppo2_setpoint: [],
+    ai_t2_data: [],
+    gtr: [],
+    cns: [],
+    deco_ceiling: [],
+    gf99: [],
+    at_plus_5: [],
+    ai_t1_data: [],
+    sac: [],
+  };
+  const openingTypes = [0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17];
+  const closingTypes = [0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0xFF];
+  for(const log of logs) {
+    if (openingTypes.includes(log.log_type)) {
+      openingData = {...openingData, ...log};
+    } else if (closingTypes.includes(log.log_type)) {
+      closingData = {...closingData, ...log};
+    } else {
+      for(const header of Object.keys(dive)) {
+        if (log[header]) dive[header].push(log[header]);
+      }
+    }
+  }
+  delete openingData.log_type;
+  delete closingData.log_type;
+  return {
+    openingData,
+    dive,
+    closingData,
+  };
+}
