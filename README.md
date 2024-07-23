@@ -373,14 +373,17 @@ Navigate to http://localhost:5173
 - [x] add ability to download selected dives
 - [ ] ensure proper UX:
     - [x] progress bar when downloading manifest
-    - [ ] display spinner when connecting to dive computer
-    - [ ] display progress bar when downloading logs
-    - [ ] display a message when no dives are stored
+    - [ ] display progress bar when downloading logs:
+        - when decoding records, each entry is a 10s chunk (based on sample rate)
+        - take duration, divide by sample rate to get a rough idea of how many entries there are
+    - [x] display a message when no dives are stored
     - [ ] compact view for log manifest
     - [ ] use color to indicate computer connected or not
-    - [ ] automatically show when computer is disconnected
+    - [x] automatically show when computer is disconnected
     - [ ] filter/search dives (depth, location, OC/CC, OW/Cave, Rec/Tec)
-- [ ] add hint how to enable web bluetooth
+    - [ ] do not show "select" or "download" buttons when there are no dives in manifest or all dives are downloaded
+    - [ ] add instruction to turn on/off bluetooth on computer when clicking "Connect"
+    - [x] add hint how to enable web bluetooth
 - [ ] store logs locally: store undownloaded manifest by computer ID
 - [ ] able to manually add logs
 - [ ] able to edit logs
