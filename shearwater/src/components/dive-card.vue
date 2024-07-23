@@ -12,11 +12,13 @@ function getFontSize(text) {
   }
   return '2.5em';
 }
+
 function drawClock(ctx, radius, minutes) {
     drawFace(ctx, radius);
     drawTicks(ctx, radius);
     drawTime(ctx, radius, minutes);
 }
+
 function drawBackgroundArc(ctx, startAngle, endAngle, radius) {
     ctx.beginPath();
     ctx.moveTo(0, 0);
