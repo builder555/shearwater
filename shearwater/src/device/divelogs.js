@@ -1,5 +1,5 @@
-import { END_OF_FRAME } from "./constants";
-import { slipDecode } from "./SLIP";
+import { END_OF_FRAME } from './constants';
+import { slipDecode } from './SLIP';
 
 function areArraysEqual(arr1, arr2) {
     if (arr1.length !== arr2.length) return false;
@@ -46,7 +46,7 @@ export class LogDecoder {
         if (!(recordType in this._decoders)) {
             return bytesToHex(data);
         }
-        return {log_type: recordType, ...this._decoders[recordType](data)}
+        return {log_type: recordType, ...this._decoders[recordType](data)};
     }
 
     decodeOpenRecord10(data) {
@@ -168,18 +168,18 @@ export class LogDecoder {
 
     decodeOpenRecord15(data) {
         const languages = [
-            "English",
-            "Chinese",
-            "Japanese",
-            "Korean",
-            "Russian",
-            "French",
-            "German",
-            "Spanish",
-            "Italian",
-            "Traditional Chinese",
-            "Portuguese",
-            "Polish",
+            'English',
+            'Chinese',
+            'Japanese',
+            'Korean',
+            'Russian',
+            'French',
+            'German',
+            'Spanish',
+            'Italian',
+            'Traditional Chinese',
+            'Portuguese',
+            'Polish',
         ];
         return {
             ai_t1_serial: bytesToHex(data.slice(1, 4)),
@@ -314,18 +314,18 @@ export class LogDecoder {
 
     decodeFinalRecord(data) {
         const products = [
-            "Pursuit",
+            'Pursuit',
             null,
-            "Predator",
-            "Petrel",
-            "Nerd",
-            "Perdix",
-            "Perdix AI",
-            "Nerd 2",
-            "Teric",
-            "Peregrine",
-            "Petrel 3",
-            "Perdix 2",
+            'Predator',
+            'Petrel',
+            'Nerd',
+            'Perdix',
+            'Perdix AI',
+            'Nerd 2',
+            'Teric',
+            'Peregrine',
+            'Petrel 3',
+            'Perdix 2',
         ];
         return {
             serial_number: bytesToHex(data.slice(2, 6)),
@@ -342,7 +342,7 @@ function expandToRuns(binaryChunks) {
     for (let chunk of binaryChunks) {
         const determiner = chunk[0];
         const payload = parseInt(chunk.slice(1), 2);
-        if (determiner === "1") {
+        if (determiner === '1') {
             runs = Uint8Array.of(...runs, payload);
         } else {
             runs = Uint8Array.of(...runs, ...new Uint8Array(payload));

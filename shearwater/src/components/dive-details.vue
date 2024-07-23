@@ -79,7 +79,7 @@ function mapRawOpeningToReadable(dive) {
     battery_type,
     temp_units,
     temp_units_configured,
-  }
+  };
   return mapped;
 }
 
@@ -185,10 +185,10 @@ const options = computed(() =>({
   },
   legend: {
     show: true,
-    position: "top",
+    position: 'top',
     onItemClick: {
       toggleDataSeries: false,
-    }
+    },
   },
   colors: [({ seriesIndex }) => colorMap[visibleSeries.value[seriesIndex]]],
   yaxis: visibleSeries.value.map((name) => yaxisData.value.find((s) => s.seriesName === name)),

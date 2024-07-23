@@ -1,5 +1,5 @@
-import { END_OF_FRAME } from "./constants";
-import { slipDecode } from "./SLIP";
+import { END_OF_FRAME } from './constants';
+import { slipDecode } from './SLIP';
 
 function getHhMmSs(s) {
     const date = new Date(s * 1000);
@@ -19,19 +19,19 @@ function decodeManifest(data) {
     }
     
     const depthUnits = {
-      0: "meters",
-      1: "feet"
+      0: 'meters',
+      1: 'feet',
     };
   
     const computerMode = {
-      0: "CC/BO",
-      1: "OC Tec",
-      2: "Gauge",
-      3: "PPO2 Display",
-      4: "SC/BO",
-      5: "CC/BO 2",
-      6: "OC Rec",
-      7: "Freedive"
+      0: 'CC/BO',
+      1: 'OC Tec',
+      2: 'Gauge',
+      3: 'PPO2 Display',
+      4: 'SC/BO',
+      5: 'CC/BO 2',
+      6: 'OC Rec',
+      7: 'Freedive',
     };
     
     const dive = {
@@ -47,7 +47,7 @@ function decodeManifest(data) {
       depthUnits: depthUnits[getNum(data.slice(28, 29))],
       tempUnits: getNum(data.slice(29, 30)), // ignore
       computerMode: computerMode[getNum(data.slice(30, 31))],
-      manifestVersion: getNum(data.slice(31, 32)) // 0 - original, 1 - adds dive computer mode
+      manifestVersion: getNum(data.slice(31, 32)), // 0 - original, 1 - adds dive computer mode
     };
     const dateStart = new Date(dive.diveStart);
     dive.startDateFmt = dateStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });

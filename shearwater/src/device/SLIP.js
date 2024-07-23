@@ -1,4 +1,4 @@
-import { END_OF_FRAME, ESC_CODE, ESC_END, ESC_ESC } from "./constants";
+import { END_OF_FRAME, ESC_CODE, ESC_END, ESC_ESC } from './constants';
 
 export function slipEncode(data) {
     const encoded = [];

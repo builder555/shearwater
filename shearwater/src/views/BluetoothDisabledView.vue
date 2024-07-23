@@ -2,7 +2,7 @@
 const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
 const isSafari = navigator.userAgent.toLowerCase().includes('safari') && !isChrome;
-const isIOSNonBluefy = (navigator.userAgent.includes("iPhone") || navigator.userAgent.includes("iPad")) && !navigator.userAgent.includes("bluefy");
+const isIOSNonBluefy = (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) && !navigator.userAgent.includes('bluefy');
 </script>
 <template>
   <div class="center centered">
