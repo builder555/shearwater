@@ -384,6 +384,8 @@ Navigate to http://localhost:5173
 - [ ] store logs locally: store undownloaded manifest by computer ID
 - [ ] able to manually add logs
 - [ ] able to edit logs
+- [ ] able to delete logs
+- [ ] handle multiple computers: group logs by computer ID
 - [ ] able to export dive logs to csv/json/DL7
 - [ ] add settings:
     - [ ] select depth units (m/ft)
