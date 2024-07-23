@@ -7,7 +7,7 @@
 } 
 html, body {
   width: 100%;
-  min-height: 100%;
+  min-height: 100vh;
   font-family: 'Exo', sans-serif;
   transition:
     color 0.5s,
@@ -66,4 +66,7 @@ button {
 button:hover {
   background-color: var(--button-hover-bg);
   color: var(--button-hover-text);
+}
+ul {
+  list-style: none;
 }
