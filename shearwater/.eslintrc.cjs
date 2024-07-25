@@ -3,7 +3,7 @@ require('@rushstack/eslint-patch/modern-module-resolution');
 
 module.exports = {
   root: true,
-  'extends': [
+  extends: [
     'plugin:vue/vue3-essential',
     'eslint:recommended',
     '@vue/eslint-config-prettier/skip-formatting',
@@ -13,12 +13,14 @@ module.exports = {
   },
   rules: {
     // ensure semicolons
-    'semi': ['error', 'always'],
+    semi: ['error', 'always'],
     // ensure trailing commas
     'comma-dangle': ['error', 'always-multiline'],
     // ensure single quotes
-    'quotes': ['error', 'single'],
+    quotes: ['error', 'single'],
     // ensure no unused variables
     'no-unused-vars': 'error',
+    // line length
+    'max-len': ['error', { code: 120 }],
   },
 };
