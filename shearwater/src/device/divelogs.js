@@ -402,7 +402,6 @@ export class LogDownloader {
 
     async _sendData(data) {
         this._isNewData = false;
-        // console.log('sending', bytesToHex(data, ' '));
         await this._dev.sendData(data);
     }
 
@@ -427,8 +426,8 @@ export class LogDownloader {
     }
 
     _onData(data) {
-        // console.log('received', bytesToHex(data));
-        let isAck = data.toString(16).includes((new Uint8Array([0x01, 0xff, 0x04, 0x00, 0x75, 0x10, 0x92])).toString(16));
+        const ackPacket = (new Uint8Array([0x01, 0xff, 0x04, 0x00, 0x75, 0x10, 0x92])).toString(16);
+        let isAck = data.toString(16).includes(ackPacket);
         if (isAck) {
             this._isAcked = true;
             this._isNewData = true;
@@ -443,7 +442,8 @@ export class LogDownloader {
         this._accumulator = Uint8Array.of(...this._accumulator, ...headlessData);
         if (this._accumulator[this._accumulator.length - 1] === END_OF_FRAME) {
             this._isNewData = true;
-            this._hasReachedEnd = this._hasReachedEnd || areArraysEqual(this._accumulator.slice(-9, -1), new Uint8Array(8));
+            const endsWithZeros = areArraysEqual(this._accumulator.slice(-9, -1), new Uint8Array(8));
+            this._hasReachedEnd = this._hasReachedEnd || endsWithZeros;
             let decoded = slipDecode(this._accumulator.slice(6));
             let logs = this._extractLogs(decoded);
             this._accumulator = new Uint8Array();
@@ -508,7 +508,7 @@ export function formatLogs(logs){
       closingData = {...closingData, ...log};
     } else {
       for(const header of Object.keys(dive)) {
-        if (log[header]) dive[header].push(log[header]);
+        dive[header].push(log[header] ?? null);
       }
     }
   }
