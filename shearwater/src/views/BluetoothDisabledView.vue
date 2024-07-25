@@ -2,7 +2,8 @@
 const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
 const isSafari = navigator.userAgent.toLowerCase().includes('safari') && !isChrome;
-const isIOSNonBluefy = (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) && !navigator.userAgent.includes('bluefy');
+const isIOSNonBluefy = (navigator.userAgent.includes('iPhone')
+                        || navigator.userAgent.includes('iPad')) && !navigator.userAgent.includes('bluefy');
 </script>
 <template>
   <div class="center centered">
@@ -12,13 +13,15 @@ const isIOSNonBluefy = (navigator.userAgent.includes('iPhone') || navigator.user
       <template v-if="isFirefox">
         <h3>Firefox does not support Web Bluetooth</h3>
         <p>
-          Please use <a href="https://brave.com/" target="_blank">Brave</a> or Google Chrome browser to enable Web Bluetooth.
+          Please use <a href="https://brave.com/" target="_blank">Brave</a> 
+          or Google Chrome browser to enable Web Bluetooth.
         </p>
       </template>
       <template v-else-if="isIOSNonBluefy">
         <h3>Most iOS browsers do not support Web Bluetooth</h3>
         <p>
-          Please use <a href="https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055">Bluefy</a> browser to access Web Bluetooth.
+          Please use <a href="https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055">Bluefy</a> 
+          browser to access Web Bluetooth.
         </p>
       </template>
       <template v-else-if="isChrome">
@@ -30,7 +33,8 @@ const isIOSNonBluefy = (navigator.userAgent.includes('iPhone') || navigator.user
             <p><img src="@/assets/bt-enable-step1.png" width="80%"/></p>
           </li>
           <li>
-            <p>Search for "bluetooth" to find <strong>Web Bluetooth API</strong> setting <br>and change "Default (disabled)" option to "<strong>Enabled</strong>"</p>
+            <p>Search for "bluetooth" to find <strong>Web Bluetooth API</strong> setting 
+              <br>and change "Default (disabled)" option to "<strong>Enabled</strong>"</p>
             <p><img src="@/assets/bt-enable-step2.png" width="80%"/></p>
           </li>
           <li>
@@ -43,7 +47,8 @@ const isIOSNonBluefy = (navigator.userAgent.includes('iPhone') || navigator.user
       <template v-else-if="isSafari">
         <h3>Safari does not support Web Bluetooth</h3>
         <p>
-          Please use <a href="https://brave.com/" target="_blank">Brave</a> or Google Chrome browser to enable Web Bluetooth.
+          Please use <a href="https://brave.com/" target="_blank">Brave</a> 
+          or Google Chrome browser to enable Web Bluetooth.
         </p>
       </template>
     </div>
