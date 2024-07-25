@@ -24,3 +24,7 @@ export async function saveManifest(manifest) {
 export async function saveDiveLog(dive) {
   saveToLocalStorage(`dive-${dive.id}`, dive);
 }
+
+export async function fetchDiveLog(id) {
+  return loadFromLocalStorage(`dive-${id}`);
+}
