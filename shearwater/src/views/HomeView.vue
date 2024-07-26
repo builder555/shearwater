@@ -20,16 +20,29 @@ const { dives, isConnected } = storeToRefs(store);
       />
     </div>
     <div class="dives">
-      <DiveCard 
+      <span
         v-for="(dive, id) in dives"
         :key="id"
-        :dive="dive"
-        @click="diveCardClicked(dive)"
-      />
+      >
+        <RouterLink
+          v-if="dive.isDownloaded"
+          :to="`/dive/${id}`"
+        >
+          <DiveCard :dive="dive" />
+        </RouterLink>
+        <DiveCard
+          v-else
+          :dive="dive"
+          @click="diveCardClicked(dive)"
+        />
+      </span>
     </div>
 </template>
 
 <style scoped>
+  a {
+    text-decoration: none;
+  }
   .dives {
     display: flex;
     flex-wrap: wrap;
