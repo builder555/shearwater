@@ -102,7 +102,11 @@ onMounted(() => {
       </div>  
     </div>
     <div class="row"
-      style="margin-bottom: 0; margin-top: auto; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between;"
+      style="margin-bottom: 0; 
+        margin-top: auto; 
+        background: rgba(0,0,0,0.2); 
+        display: flex; 
+        justify-content: space-between;"
     >
       <canvas
         class="divetime"
