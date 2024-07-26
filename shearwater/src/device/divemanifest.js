@@ -1,7 +1,7 @@
 import { END_OF_FRAME } from './constants';
 import { slipDecode } from './SLIP';
 
-function getHhMmSs(s) {
+export function getHhMmSs(s) {
   const date = new Date(s * 1000);
   const hours = String(date.getUTCHours()).padStart(2, '0');
   const minutes = String(date.getUTCMinutes()).padStart(2, '0');
@@ -9,14 +9,15 @@ function getHhMmSs(s) {
   return `${hours}h ${minutes}m ${seconds}s`;
 }
 
+export function getDate(timestamp) {
+  return new Date(timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
+}
+
 function decodeManifest(data) {
   function getNum(data) {
     return data.reduce((acc, byte) => (acc << 8) | byte, 0);
   }
 
-  function getDate(timestamp) {
-    return new Date(timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
-  }
 
   const depthUnits = {
     0: 'meters',
