@@ -14,10 +14,7 @@ const { dives, isConnected } = storeToRefs(store);
       v-if="Object.values(dives).length < 1 && !isConnected"
       class="center centered"
     >
-      <WebpImage
-        webpUrl="@/assets/perdix2.webp"
-        altUrl="@/assets/perdix2.png"
-      />
+      <WebpImage/>
     </div>
     <div class="dives">
       <span

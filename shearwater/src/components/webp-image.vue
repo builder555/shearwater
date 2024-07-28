@@ -11,12 +11,15 @@ function checkWebPSupport(callback) {
     'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
 }
 const image = ref('');
+import webpImage from '@/assets/perdix2.webp';
+import altImage from '@/assets/perdix2.png';
+
 onMounted(() => {
   checkWebPSupport(function (isSupported) {
     if (isSupported) {
-      image.value = props.webpUrl.replace('@/', '/src/');
+      image.value = webpImage;
     } else {
-      image.value = props.altUrl.replace('@/', '/src/');
+      image.value = altImage;
     }
   });
 });
