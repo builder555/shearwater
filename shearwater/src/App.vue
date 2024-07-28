@@ -5,9 +5,9 @@ import { useMainStore } from '@/store';
 
 const store = useMainStore();
 const { connect, downloadDives, toggleAllDiveCards } = store;
-const { progress, isConnected, isBluetoothEnabled, computerName, areAllDivesPicked } = storeToRefs(store);
-
+const { progress, isConnected, isBluetoothEnabled, computerName, areAllDivesPicked, isBusy } = storeToRefs(store);
 const header = ref('header');
+
 watch(() => progress.value, () => {
   if (progress.value === 0) {
     header.value.style.transition = 'none';
@@ -31,12 +31,13 @@ watch(() => progress.value, () => {
         style="margin-left: 10px;"
         class="outline"
         :class="{'selected' : areAllDivesPicked}"
+        :disabled="isBusy"
         @click="toggleAllDiveCards"
       >Select All</button>
-      <button @click="downloadDives">Download</button>
+      <button @click="downloadDives" :disabled="isBusy">Download</button>
     </div>
     <div v-else-if="isBluetoothEnabled">
-      <button @click="connect">Connect Dive Computer</button>
+      <button @click="connect" :disabled="isBusy">Connect Dive Computer</button>
     </div>
     <div v-else>
       <p>Web Bluetooth is disabled</p>
