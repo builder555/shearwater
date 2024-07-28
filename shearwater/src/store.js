@@ -43,8 +43,6 @@ export const useMainStore = defineStore('main', () => {
     for (const dive of Object.values(dives.value)) {
       dive.isSelected = !dive.isDownloaded && shouldSelect;
     }
-    console.log(areAllDivesPicked.value);
-    console.log(selectedIds.value.length, downloadedIds.value.length, Object.keys(dives.value).length);
   }
 
   ble.onDisconnect(() => {
@@ -80,7 +78,18 @@ export const useMainStore = defineStore('main', () => {
     isBusy.value = true;
     const diveData = await fetchDiveLog(id);
     const sampleRate = diveData.openingData.log_sample_rate_ms / 1000;
-    const { depth, sac, avg_ppo2, ai_t1_data, ai_t2_data, water_temp } = diveData.dive;
+    const {
+      depth,
+      sac,
+      avg_ppo2,
+      ai_t1_data,
+      ai_t2_data,
+      water_temp,
+      deco_ceiling,
+      gf99,
+      next_stop_or_ndl_time,
+      next_stop_depth,
+    } = diveData.dive;
     const times = [];
     for (let i = 0; i < depth.length; i++) {
       depth[i] = depth[i] / 10;
@@ -89,6 +98,7 @@ export const useMainStore = defineStore('main', () => {
       ai_t1_data[i] = ai_t1_data[i] > 0xfff0 ? null : (ai_t1_data[i] & 0xfff) * 2;
       ai_t2_data[i] = ai_t2_data[i] > 0xfff0 ? null : (ai_t2_data[i] & 0xfff) * 2;
       times.push(i * sampleRate);
+      gf99[i] = gf99[i] == 0xff ? null : gf99[i];
     }
     isBusy.value = false;
     const result = {
@@ -96,19 +106,48 @@ export const useMainStore = defineStore('main', () => {
       openingData: mapRawOpeningToReadable(diveData.openingData),
       closingData: diveData.closingData,
     };
-    result['data'] = [
-      { name: 'depth', title: `Depth (${result.openingData.depth_units})`, data: depth, color: '#ce0707' },
-      { name: 'sac', title: 'SAC Rate (PSI/min)', data: sac, color: '#3faa24' },
+    const depthUnits = result.openingData.depth_units;
+    const tempUnits = result.openingData.temp_units;
+    function isDataAvailable(data) {
+      return data.some(Boolean);
+    }
+    const nextStopTitle = next_stop_depth.some(Boolean) ? 'Next Stop' : 'NDL';
+    result.data = [
+      { isVisible: true, name: 'Depth', title: `Depth (${depthUnits})`, data: depth, color: '#f0f0f0' },
+      { isVisible: false, name: 'SAC', title: 'SAC Rate (PSI/min)', data: sac, color: '#3faa24' },
       {
-        name: 'water_temp',
-        title: `Water Temperature (${result.openingData.temp_units})`,
+        isVisible: false,
+        name: 'Water Temp.',
+        title: `Water Temperature (${tempUnits})`,
         data: water_temp,
         color: '#ef7b00',
       },
-      { name: 'avg_ppo2', title: 'Avg. PPO2 (ATA)', data: avg_ppo2, color: '#992cf8' },
-      { name: 'ai_t1_data', title: 'AI T1 (PSI)', data: ai_t1_data, color: '#3877eb' },
-      { name: 'ai_t2_data', title: 'AI T2 (PSI)', data: ai_t2_data, color: '#00c8ff' },
-    ];
+      { isVisible: false, name: 'Avg. ppO2', title: 'Avg. PPO2 (ATA)', data: avg_ppo2, color: '#992cf8' },
+      { isVisible: true, name: 'AI T1', title: 'AI T1 (PSI)', data: ai_t1_data, color: '#3877eb' },
+      { isVisible: false, name: 'AI T2', title: 'AI T2 (PSI)', data: ai_t2_data, color: '#00c8ff' },
+      {
+        isVisible: false,
+        name: 'Deco Ceil.',
+        title: `Deco Ceiling (${depthUnits})`,
+        data: deco_ceiling,
+        color: '#e9967a',
+      },
+      { isVisible: false, name: 'GF99', title: 'GF99 (%)', data: gf99, color: '#f4c300' },
+      {
+        isVisible: false,
+        name: nextStopTitle,
+        title: `${nextStopTitle} (min)`,
+        data: next_stop_or_ndl_time,
+        color: '#ce0707',
+      },
+      {
+        isVisible: false,
+        name: 'Next Stop',
+        title: `Next Stop Depth (${depthUnits})`,
+        data: next_stop_depth,
+        color: '#4682b4',
+      },
+    ].filter((d) => isDataAvailable(d.data));
     return result;
   }
 
@@ -118,23 +157,39 @@ export const useMainStore = defineStore('main', () => {
     const decoder = new LogDecoder();
     progress.value = 1;
     const totalItems = selectedIds.value.length;
+    let logs = [];
+    let numSavedLogs = 0;
+    let totalNumLogs = 0;
+    let duration = 0;
+
+    downloader.subscribe((data) => {
+      const decoded = decoder.decode(data);
+      if (typeof decoded === 'object') {
+        logs.push(decoded);
+        if (decoded.log_type == 0x01) numSavedLogs++;
+        if (decoded.log_sample_rate_ms && duration && !totalNumLogs) {
+          totalNumLogs = (duration * 1000) / decoded.log_sample_rate_ms;
+        }
+        if (totalNumLogs && numSavedLogs < totalNumLogs) {
+          const logDownloadProgress = numSavedLogs / totalNumLogs;
+          progress.value = ((totalItems - selectedIds.value.length + logDownloadProgress) / totalItems) * 100;
+        }
+      }
+    });
+
     while (selectedIds.value.length > 0) {
       const diveId = selectedIds.value[0];
       const dive = dives.value[diveId];
-      const logs = [];
-      downloader.subscribe((data) => {
-        const decoded = decoder.decode(data);
-        if (typeof decoded === 'object') {
-          logs.push(decoded);
-        }
-      });
+      logs = [];
+      numSavedLogs = 0;
+      totalNumLogs = 0;
+      duration = dive.diveDuration;
       await downloader.download(dive.recordAddressStart);
       const formatted = formatLogs(logs);
       formatted.id = diveId;
       dive.isDownloaded = true;
       dive.isSelected = false;
       saveDiveLog(formatted);
-      progress.value = Math.max(1, ((totalItems - selectedIds.value.length) / totalItems) * 100);
     }
     setTimeout(() => {
       progress.value = 0;
