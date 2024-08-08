@@ -1,12 +1,12 @@
 import { END_OF_FRAME } from './constants';
 import { slipDecode } from './SLIP';
 
-function areArraysEqual(arr1, arr2) {
-    if (arr1.length !== arr2.length) return false;
-    for (let i = 0; i < arr1.length; i++) {
-      if (arr1[i] !== arr2[i]) return false;
+function bytesToAscii(bytes) {
+    let ascii = '';
+    for (const b of bytes) {
+      ascii += String.fromCharCode(b);
     }
-    return true;
+    return ascii;
 }
 
 function getNum(data) {
@@ -206,9 +206,9 @@ export class LogDecoder {
             time_alert: getNum(data.slice(13, 16)),
             low_ndl_alert: getNum(data.slice(16, 19)),
             ai_t1_on: getNum(data.slice(19, 20)),
-            ai_t1_name: bytesToHex(data.slice(20, 22)),
+            ai_t1_name: bytesToAscii(data.slice(20, 22)),
             ai_t2_on: getNum(data.slice(22, 23)),
-            ai_t2_name: bytesToHex(data.slice(23, 25)),
+            ai_t2_name: bytesToAscii(data.slice(23, 25)),
             ai_t3_serial: bytesToHex(data.slice(25, 28)),
             ai_t3_max_psi: getNum(data.slice(28, 30)),
             ai_t3_reserve_psi: getNum(data.slice(30, 32)),
@@ -218,12 +218,12 @@ export class LogDecoder {
     decodeOpenRecord17(data) {
         return {
             ai_t3_on: getNum(data.slice(1, 2)),
-            ai_t3_name: bytesToHex(data.slice(2, 4)),
+            ai_t3_name: bytesToAscii(data.slice(2, 4)),
             ai_t4_serial: bytesToHex(data.slice(4, 7)),
             ai_t4_max_psi: getNum(data.slice(7, 9)),
             ai_t4_reserve_psi: getNum(data.slice(9, 11)),
             ai_t4_on: getNum(data.slice(11, 12)),
-            ai_t4_name: bytesToHex(data.slice(12, 14)),
+            ai_t4_name: bytesToAscii(data.slice(12, 14)),
             ai_sidemount_switch_psi: bytesToHex(data.slice(14, 16)),
             error_flags_3: getNum(data.slice(16, 20)),
             error_acks_3: getNum(data.slice(20, 24)),
@@ -379,6 +379,8 @@ export class LogDownloader {
         this._items = [];
         this._hasReachedEnd = false;
         this._isNewData = false;
+        this._isLogDone = false;
+        this._gotFinalRecord = false;
         this._subscribers = [];
         this._runs = new Uint8Array();
         this._lastLog = new Uint8Array(32);
@@ -407,7 +409,7 @@ export class LogDownloader {
 
     async waitForNewData() {
         while (!this._isNewData) {
-            await new Promise(resolve => setTimeout(resolve, 10));
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
     }
 
@@ -433,19 +435,22 @@ export class LogDownloader {
             this._isNewData = true;
             return;
         }
-        let isLogDone = data.slice(-3).toString(16).includes(new Uint8Array([0x77, 0x00, END_OF_FRAME]).toString(16));
-        if (isLogDone) {
+        this._isLogDone = data.slice(-3).toString(16).includes(new Uint8Array([0x77, 0x00, END_OF_FRAME]).toString(16));
+        if (this._isLogDone) {
             this._isNewData = true;
             return;
         }
         let headlessData = data.slice(2);
+        function containsFinalRecord(logs) {
+            return logs.filter(l => l[0] === 0xFF).length > 0;
+        }
         this._accumulator = Uint8Array.of(...this._accumulator, ...headlessData);
         if (this._accumulator[this._accumulator.length - 1] === END_OF_FRAME) {
             this._isNewData = true;
-            const endsWithZeros = areArraysEqual(this._accumulator.slice(-9, -1), new Uint8Array(8));
-            this._hasReachedEnd = this._hasReachedEnd || endsWithZeros;
             let decoded = slipDecode(this._accumulator.slice(6));
             let logs = this._extractLogs(decoded);
+            this._gotFinalRecord = containsFinalRecord(logs) || this._gotFinalRecord;
+            this._hasReachedEnd = this._hasReachedEnd || this._gotFinalRecord && this._runs.length == 0;
             this._accumulator = new Uint8Array();
             this._notifySubs(logs);
         }
@@ -455,6 +460,8 @@ export class LogDownloader {
         this._dev.subscribe(this._onData.bind(this));
         this._hasReachedEnd = false;
         this._isAcked = false;
+        this._isLogDone = false;
+        this._gotFinalRecord = false;
         await this._sendData(Uint8Array.of(0x35, 0x10, 0x34, 0x80, ...address.slice(1)));
         while (!this._isAcked) {
             await new Promise(resolve => setTimeout(resolve, 100));
