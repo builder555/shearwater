@@ -54,9 +54,8 @@ Response: 030001ff93007601887fdbdc319945568ffd00c380566a9c520a01a360b272005c07fe
 Response: 03010ca3400281806791a80c320703f456803089a42269089a7ffffff00c2c030380c4b19a194680050300cf003078540e077ead62a1314854d211bfffddfe10e00c06040882dbdc4050189c12
 Response: 03027196c0
 # Keep sending  01 00 ff 01 03 00 36 XX c0 where XX is subsequent blocks (02, 03, etc.)
-# until you get something like:
-# Response: 0301dbdc0e79958143a178428800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-# Response: 03020000c0
+# until you get final record (have to decode packets to know): FF FD 08 39 11 54.......
+# Now you can send 01 00 ff 01 02 00 37 c0 to complete the transfer
 ```
 
 ### Basic UI
@@ -80,8 +79,10 @@ npm run dev
 
 Navigate to http://localhost:5173
 
-
-### TODO
+<details>
+<summary>
+TODO
+</summary>
 
 
 - [x] remove dark square from background
@@ -121,6 +122,24 @@ Navigate to http://localhost:5173
     - [ ] at_plus_5
     - [x] ai_t1_data
     - [x] sac
+    - use colors: 
+        # - Yellow
+        #ff007f - Magenta
+        #00ff00 - Bright Green
+        #ff00ff - Fuchsia
+        #00ffff - Cyan
+        #ff0000 - Red
+        #0000ff - Blue
+        #8b0000 - Dark Red
+        #008b8b - Dark Cyan
+        #ff8c00 - Dark Orange
+        #483d8b - Dark Slate Blue
+        #8b008b - Dark Magenta
+        #9acd32 - Yellow Green
+        #4682b4 - Steel Blue
+        # - Chocolate
+        #556b2f - Dark Olive Green
+        # - Dark Salmon
 
 - [ ] display data for a dive:
     - [ ] opening record:
@@ -373,6 +392,7 @@ Navigate to http://localhost:5173
 - [x] add ability to download selected dives
 - [ ] ensure proper UX:
     - [x] progress bar when downloading manifest
+    - [ ] when fetching new dives - sort them by date
     - [ ] display progress bar when downloading logs:
         - when decoding records, each entry is a 10s chunk (based on sample rate)
         - take duration, divide by sample rate to get a rough idea of how many entries there are
@@ -384,6 +404,7 @@ Navigate to http://localhost:5173
     - [ ] do not show "select" or "download" buttons when there are no dives in manifest or all dives are downloaded
     - [ ] add instruction to turn on/off bluetooth on computer when clicking "Connect"
     - [x] add hint how to enable web bluetooth
+    - [ ] change displayed Y axis on hover over buttons
 - [ ] store logs locally: store undownloaded manifest by computer ID
 - [ ] able to manually add logs
 - [ ] able to edit logs
@@ -394,3 +415,4 @@ Navigate to http://localhost:5173
     - [ ] select depth units (m/ft)
     - [ ] select temperature units (C/F)
     - [ ] select pressure units (psi/bar)
+</details>
