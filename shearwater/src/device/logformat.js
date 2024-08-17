@@ -1,10 +1,4 @@
-import { getDate, getHhMmSs } from './divemanifest';
-function daysHhMm(minutes) {
-  const days = Math.floor(minutes / 1440);
-  const hrs = Math.floor((minutes % 1440) / 60);
-  const mins = minutes % 60;
-  return `${days}d ${hrs}h ${mins}m`;
-}
+import { getDate, getHhMmSs, getDaysHhMm } from './date.functions';
 
 export function mapRawOpeningToReadable(dive) {
   if (!dive) return {};
@@ -28,7 +22,7 @@ export function mapRawOpeningToReadable(dive) {
     dive_number: dive.dive_number,
     gf_low: dive.gf_low,
     gf_high: dive.gf_high,
-    surface_time: daysHhMm(dive.surface_time),
+    surface_time: getDaysHhMm(dive.surface_time),
     depth_units: depth_units,
     cns: `${dive.cns}%`,
     dive_start: getDate(dive.dive_start),
@@ -93,9 +87,9 @@ export function mapRawClosingToReadable(dive) {
     dive_time_with_min_rst: getHhMmSs(dive.dive_time_with_min_rst), //minutes
     last_sac: dive.last_avg_sac_x100 / 100,
     max_depth: dive.max_depth_x10 / 10,
-    min_rct: getHhMmSs(dive.min_rct*60), // minutes
-    min_rst: getHhMmSs(dive.min_rst*60), // minutes
-    total_on_time: daysHhMm(dive.total_on_time), //seconds
+    min_rct: getHhMmSs(dive.min_rct * 60), // minutes
+    min_rst: getHhMmSs(dive.min_rst * 60), // minutes
+    total_on_time: getDaysHhMm(dive.total_on_time / 60),
     cns: `${dive.cns}%`,
   };
   return mapped;

@@ -1,5 +1,5 @@
 import uPlot from 'uplot';
-import { getHhMmSs } from '@/device/divemanifest';
+import { getHhMmSs } from '@/device/date.functions';
 
 function getSize(container) {
   const { width, height } = container.getBoundingClientRect();
