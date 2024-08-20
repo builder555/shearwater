@@ -17,6 +17,10 @@ function tooltipPlugin(overlay) {
     bRight = bbox.right;
   }
 
+  function formatTooltipLine(text, value, color) {
+    return `<div style="color: ${color}">${text}: ${value}</div>`;
+  }
+
   return {
     hooks: {
       init: (u) => {
@@ -46,8 +50,8 @@ function tooltipPlugin(overlay) {
         }
         const x = u.data[0][idx];
         const itmes = u.series.map((s, i) => ({ name: s.scale, value: u.data[i][idx], color: s._stroke }));
-        itmes[0] = { name: 'Time', value: getHhMmSs(x) };
-        overlay.innerHTML = itmes.map((i) => `${i.name}: ${i.value}`).join('\n<br/>');
+        itmes[0] = { name: 'Time', value: getHhMmSs(x), color: '#aaa' };
+        overlay.innerHTML = itmes.map(({name, value, color}) => formatTooltipLine(name,value,color)).join('\n');
         overlay.style.left = anchor.left;
         overlay.style.top = anchor.top;
       },
