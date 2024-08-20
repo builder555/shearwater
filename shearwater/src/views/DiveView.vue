@@ -1,6 +1,5 @@
 <script setup>
 // todo:
-// - show legend as tooltip
 // - remember which series are visible
 
 import { ref } from 'vue';
@@ -37,34 +36,70 @@ function toggleLogVisibility(log) {
 }
 </script>
 <template>
-  <div class="chart-holder">
-    <div ref="chartElement"></div>
-    <div v-if="dive?.data" class="button-group">
-      <button
-        v-for="log in dive.data"
-        :key="log.name"
-        class="outline"
-        :style="{
-          'background-color': log.isVisible ? log.color : '#222',
-          'color': log.isVisible ? '#000' : log.color,
-        }" 
-        @click="toggleLogVisibility(log)"
-      >{{ log.name }}</button>
+  <div class="background">
+    <div class="chart-holder">
+      <div ref="chartElement"></div>
+      <div ref="tooltip" class="tooltip"></div>
+      <div v-if="dive?.data" class="button-group">
+        <button
+          v-for="log in dive.data"
+          :key="log.name"
+          class="outline"
+          :style="{
+            'background-color': log.isVisible ? log.color : '#222',
+            'color': log.isVisible ? '#000' : log.color,
+          }"
+          @click="toggleLogVisibility(log)"
+        >{{ log.name }}</button>
+      </div>
     </div>
-    <div ref="tooltip" class="tooltip"></div>
+    <div class="dive-data"> 
+      <div class="general">
+        <div class="number">Dive #{{ dive?.openingData.dive_number }}</div>
+        <div class="time">Surface time: {{dive?.openingData.surface_time}}</div>
+        <div class="start">Dive start: {{dive?.openingData.dive_start}}</div>
+        <div class="end">Dive end: {{dive?.closingData.dive_end}}</div>
+        <div class="length">Dive length: {{dive?.closingData.dive_length}}</div>
+        <div class="depth">Max depth: {{dive?.closingData.max_depth}}{{ dive?.openingData.depth_units }}</div>
+        <div class="pressure">Surface pressure: {{dive?.openingData.surface_pressure}}</div>
+      </div> 
+    </div>
   </div>
+
 </template>
-<style scoped>
+<style scoped lang="scss">
+.background {
+  background: #141619;
+  color: #c7d0d9;  
+}
+.dive-data {
+  margin-top: 106px;
+  .general {
+    color: #333;
+    border-radius: 10px;
+    border: 2px solid #000;
+    background-color: #fff;
+    padding: 5px;
+    max-width: 600px;
+    width: 95%;
+    text-align: left;
+    margin-bottom: 10px;
+    width: 250px;
+    .number {
+      font-weight: bold;
+    }
+  }
+}
 .chart-holder {
   width: 100%;
-  height: 50vh;
-  min-height: 300px;
+  height: 55vh;
+  min-height: 350px;
 }
 .tooltip {
   position: fixed;
-  background: #ccc;
+  background: #444;
   padding: 10px;
-  color: #000;
+  color: #fff;
   width: 200px;
   pointer-events: none;
   display: none;
@@ -74,45 +109,34 @@ function toggleLogVisibility(log) {
   display: flex;
   flex-direction: row;
   justify-content: center;
-}
-.button-group button:first-child {
-  margin-right: 0;
-  border-bottom-right-radius: 0;
-  border-top-right-radius: 0;
-}
-
-.button-group button:last-child {
-  margin-left: 0;
-  border-bottom-left-radius: 0;
-  border-top-left-radius: 0;
-  border-left: 1px solid #777;
-}
-
-.button-group button:not(:first-child):not(:last-child) {
-  margin-left: 0;
-  margin-right: 0;
-  border-left: 1px solid #777;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+  button {
+    margin-left: 0;
+    margin-right: 0;
+    &:first-child {
+      border-bottom-right-radius: 0;
+      border-top-right-radius: 0;
+    }
+    &:last-child {
+      border-bottom-left-radius: 0;
+      border-top-left-radius: 0;
+      border-left: 1px solid #777;
+    }
+    &:not(:first-child):not(:last-child) {
+      border-left: 1px solid #777;
+      border-radius: 0;
+    }
+  }
 }
 
 button.outline:hover {
   color: #ccc !important;
 }
 
-div {
-  margin: 0;
-  background: #141619;
-  color: #c7d0d9;
-}
 </style>
 <style>
 .uplot {
   margin-top: 30px;
 }
-
 .u-select {
   background: rgba(255, 255, 255, 0.07);
 }

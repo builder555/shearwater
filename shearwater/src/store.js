@@ -5,7 +5,7 @@ import { loadManifest, saveManifest, saveDiveLog, fetchDiveLog } from '@/db';
 import { BLEShearwater } from '@/device/ble';
 import { LogDownloader, LogDecoder, formatLogs } from '@/device/divelogs';
 import { DiveManifestReader } from '@/device/divemanifest';
-import { mapRawOpeningToReadable } from './device/logformat';
+import { mapRawOpeningToReadable, mapRawClosingToReadable } from './device/logformat';
 
 export const useMainStore = defineStore('main', () => {
   const dives = ref({});
@@ -104,7 +104,7 @@ export const useMainStore = defineStore('main', () => {
     const result = {
       times,
       openingData: mapRawOpeningToReadable(diveData.openingData),
-      closingData: diveData.closingData,
+      closingData: mapRawClosingToReadable(diveData.closingData),
     };
     const depthUnits = result.openingData.depth_units;
     const tempUnits = result.openingData.temp_units;

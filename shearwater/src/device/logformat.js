@@ -59,7 +59,7 @@ export function mapRawOpeningToReadable(dive) {
     ccr_auto_sp_switch_up_depth: `${dive.ccr_auto_sp_switch_up_depth}${depth_units}`,
     ccr_auto_sp_switch_down_depth: `${dive.ccr_auto_sp_switch_down_depth}${depth_units}`,
     is_single_ppo2_sensor: dive.is_single_ppo2_sensor ? 'yes' : 'no',
-    surface_pressure: `${dive.surface_pressure / 1000} bar`,
+    surface_pressure: `${dive.surface_pressure_mbars / 1000} bar`,
     serial_number: dive.serial_number,
     deco_model,
     vpm_b_conservatism: dive.vpm_b_conservatism,
