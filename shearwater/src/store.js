@@ -20,6 +20,7 @@ export const useMainStore = defineStore('main', () => {
   const areAllDivesPicked = computed(
     () => selectedIds.value.length == Object.keys(dives.value).length - downloadedIds.value.length,
   );
+  const seriesVisibility = {};
 
   let diveDetails = {
     data: {},
@@ -112,6 +113,7 @@ export const useMainStore = defineStore('main', () => {
       return data.some(Boolean);
     }
     const nextStopTitle = next_stop_depth.some(Boolean) ? 'Next Stop' : 'NDL';
+
     result.data = [
       { isVisible: true, name: 'Depth', title: `Depth (${depthUnits})`, data: depth, color: '#f0f0f0' },
       { isVisible: false, name: 'SAC', title: 'SAC Rate (PSI/min)', data: sac, color: '#3faa24' },
@@ -148,9 +150,19 @@ export const useMainStore = defineStore('main', () => {
         color: '#4682b4',
       },
     ].filter((d) => isDataAvailable(d.data));
+    result.data.forEach((series) => {
+      if (seriesVisibility[series.name] !== undefined) {
+        series.isVisible = seriesVisibility[series.name];
+      }
+    });
     return result;
   }
 
+
+  function toggleSeriesVisibility(dataSeries) {
+    dataSeries.isVisible = !dataSeries.isVisible;
+    seriesVisibility[dataSeries.name] = dataSeries.isVisible;
+  }
   async function downloadDives() {
     isBusy.value = true;
     const downloader = new LogDownloader(ble);
@@ -212,5 +224,6 @@ export const useMainStore = defineStore('main', () => {
     connect,
     getDiveDetails,
     toggleAllDiveCards,
+    toggleSeriesVisibility,
   };
 });

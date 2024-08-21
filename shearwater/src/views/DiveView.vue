@@ -1,14 +1,11 @@
 <script setup>
-// todo:
-// - remember which series are visible
-
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useMainStore } from '@/store';
 import { makeChart } from '@/chartformatter';
 
 const store = useMainStore();
-const { getDiveDetails } = store;
+const { getDiveDetails, toggleSeriesVisibility } = store;
 const diveId = useRoute().params.id;
 const chartElement = ref(null);
 const chart = ref(null);
@@ -29,8 +26,8 @@ getDiveDetails(diveId).then((d) => {
   mkChart();
 });
 
-function toggleLogVisibility(log) {
-  log.isVisible = !log.isVisible;
+function toggleVisibile(dataSeries) {
+  toggleSeriesVisibility(dataSeries);
   chart.value.destroy();
   mkChart();
 }
@@ -42,15 +39,15 @@ function toggleLogVisibility(log) {
       <div ref="tooltip" class="tooltip"></div>
       <div v-if="dive?.data" class="button-group">
         <button
-          v-for="log in dive.data"
-          :key="log.name"
+          v-for="dataSeries in dive.data"
+          :key="dataSeries.name"
           class="outline"
           :style="{
-            'background-color': log.isVisible ? log.color : '#222',
-            'color': log.isVisible ? '#000' : log.color,
+            'background-color': dataSeries.isVisible ? dataSeries.color : '#222',
+            'color': dataSeries.isVisible ? '#000' : dataSeries.color,
           }"
-          @click="toggleLogVisibility(log)"
-        >{{ log.name }}</button>
+          @click="toggleVisibile(dataSeries)"
+        >{{ dataSeries.name }}</button>
       </div>
     </div>
     <div class="dive-data"> 
