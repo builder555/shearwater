@@ -22,7 +22,7 @@ export function mapRawOpeningToReadable(dive) {
     dive_number: dive.dive_number,
     gf_low: dive.gf_low,
     gf_high: dive.gf_high,
-    surface_time: getDaysHhMm(dive.surface_time),
+    surface_time: dive.surface_time == 0xFFFF ? '45d+' : getDaysHhMm(dive.surface_time),
     depth_units: depth_units,
     cns: `${dive.cns}%`,
     dive_start: getDate(dive.dive_start),
