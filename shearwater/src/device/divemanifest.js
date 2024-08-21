@@ -1,6 +1,6 @@
 import { END_OF_FRAME } from './constants';
 import { slipDecode } from './SLIP';
-import { getDate } from './date.functions';
+import { getDate, getHhMmSs } from './date.functions';
 
 function decodeManifest(data) {
   function getNum(data) {
