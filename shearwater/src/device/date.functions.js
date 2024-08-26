@@ -12,6 +12,6 @@ export function getDaysHhMm(minutes) {
   return `${day}d ${hr}h ${min}m`;
 }
 
-export function getDate(timestamp) {
+export function getDateTime(timestamp) {
   return new Date(timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
 }

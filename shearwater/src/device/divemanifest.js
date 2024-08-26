@@ -1,6 +1,6 @@
 import { END_OF_FRAME } from './constants';
 import { slipDecode } from './SLIP';
-import { getDate, getHhMmSs } from './date.functions';
+import { getDateTime, getHhMmSs } from './date.functions';
 
 function decodeManifest(data) {
   function getNum(data) {
@@ -30,8 +30,8 @@ function decodeManifest(data) {
       .map((byte) => byte.toString(16).padStart(2, '0'))
       .join(''),
     diveNo: getNum(data.slice(2, 4)),
-    diveStart: getDate(getNum(data.slice(4, 8))),
-    diveEnd: getDate(getNum(data.slice(8, 12))),
+    diveStart: getDateTime(getNum(data.slice(4, 8))),
+    diveEnd: getDateTime(getNum(data.slice(8, 12))),
     diveDuration: getNum(data.slice(12, 16)),
     maxDepthX10: getNum(data.slice(16, 18)),
     avgDepthX10: getNum(data.slice(18, 20)),
