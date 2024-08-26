@@ -39,6 +39,7 @@ export const useMainStore = defineStore('main', () => {
       dive.isSelected = !dive.isSelected;
     }
   }
+
   function toggleAllDiveCards() {
     const shouldSelect = !areAllDivesPicked.value;
     for (const dive of Object.values(dives.value)) {
@@ -75,10 +76,34 @@ export const useMainStore = defineStore('main', () => {
     isBusy.value = false;
   }
 
+  function formatDivePoints(diveData) {
+    const sampleRate = diveData.openingData.log_sample_rate_ms / 1000;
+    const numPoints = Math.max(...Object.values(diveData.dive).map((i) => i.length));
+    return {
+      depth: diveData.dive.depth.map((d) => d / 10),
+      sac: diveData.dive.sac.map((s) => (s < 0xfff0 ? s / 100 : null)),
+      avg_ppo2: diveData.dive.avg_ppo2.map((a) => a / 100),
+      ai_t1_data: diveData.dive.ai_t1_data.map((a) => (a < 0xfff0 ? (a & 0xfff) * 2 : null)),
+      ai_t2_data: diveData.dive.ai_t2_data.map((a) => (a < 0xfff0 ? (a & 0xfff) * 2 : null)),
+      water_temp: diveData.dive.water_temp,
+      deco_ceiling: diveData.dive.deco_ceiling,
+      gf99: diveData.dive.gf99.map((g) => (g < 0xff ? g : null)),
+      next_stop_or_ndl_time: diveData.dive.next_stop_or_ndl_time,
+      next_stop_depth: diveData.dive.next_stop_depth,
+      times: Array.from({ length: numPoints }, (_, i) => i * sampleRate),
+    };
+  }
+  function setVisibilities(data, visibility) {
+    data.forEach((series) => {
+      if (visibility[series.name] !== undefined) {
+        series.isVisible = visibility[series.name];
+      }
+    });
+    
+  }
   async function getDiveDetails(id) {
     isBusy.value = true;
     const diveData = await fetchDiveLog(id);
-    const sampleRate = diveData.openingData.log_sample_rate_ms / 1000;
     const {
       depth,
       sac,
@@ -90,29 +115,18 @@ export const useMainStore = defineStore('main', () => {
       gf99,
       next_stop_or_ndl_time,
       next_stop_depth,
-    } = diveData.dive;
-    const times = [];
-    for (let i = 0; i < depth.length; i++) {
-      depth[i] = depth[i] / 10;
-      sac[i] = sac[i] > 0xfff0 ? null : sac[i] / 100;
-      avg_ppo2[i] = avg_ppo2[i] / 100;
-      ai_t1_data[i] = ai_t1_data[i] > 0xfff0 ? null : (ai_t1_data[i] & 0xfff) * 2;
-      ai_t2_data[i] = ai_t2_data[i] > 0xfff0 ? null : (ai_t2_data[i] & 0xfff) * 2;
-      times.push(i * sampleRate);
-      gf99[i] = gf99[i] == 0xff ? null : gf99[i];
-    }
+      times,
+    } = formatDivePoints(diveData);
     isBusy.value = false;
     const result = {
       times,
       openingData: mapRawOpeningToReadable(diveData.openingData),
       closingData: mapRawClosingToReadable(diveData.closingData),
     };
+    const hasDataPoints = (points) => points.some(Boolean);
     const depthUnits = result.openingData.depth_units;
     const tempUnits = result.openingData.temp_units;
-    function isDataAvailable(data) {
-      return data.some(Boolean);
-    }
-    const nextStopTitle = next_stop_depth.some(Boolean) ? 'Next Stop' : 'NDL';
+    const nextStopTitle = hasDataPoints(next_stop_depth) ? 'Next Stop' : 'NDL';
 
     result.data = [
       { isVisible: true, name: 'Depth', title: `Depth (${depthUnits})`, data: depth, color: '#f0f0f0' },
@@ -149,15 +163,10 @@ export const useMainStore = defineStore('main', () => {
         data: next_stop_depth,
         color: '#4682b4',
       },
-    ].filter((d) => isDataAvailable(d.data));
-    result.data.forEach((series) => {
-      if (seriesVisibility[series.name] !== undefined) {
-        series.isVisible = seriesVisibility[series.name];
-      }
-    });
+    ].filter((d) => hasDataPoints(d.data));
+    setVisibilities(result.data, seriesVisibility);
     return result;
   }
-
 
   function toggleSeriesVisibility(dataSeries) {
     dataSeries.isVisible = !dataSeries.isVisible;
