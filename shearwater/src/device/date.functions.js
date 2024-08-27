@@ -15,3 +15,11 @@ export function getDaysHhMm(minutes) {
 export function getDateTime(timestamp) {
   return new Date(timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
 }
+
+export function getDate(timestamp) {
+  return new Date(timestamp * 1000).toISOString().slice(0, 10);
+}
+
+export function getTime(timestamp) {
+  return new Date(timestamp * 1000).toISOString().slice(11, 16);
+}
