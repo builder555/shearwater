@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useMainStore } from '@/store';
 import { makeChart } from '@/chartformatter';
+import DiveDetailsGeneral from '@/components/dive-details-general.vue';
 
 const store = useMainStore();
 const { getDiveDetails, toggleSeriesVisibility } = store;
@@ -16,7 +17,7 @@ function mkChart() {
   const diveNo = dive.value.openingData.dive_number;
   chart.value = makeChart({ 
       x: dive.value.times,
-      series: dive.value.data,
+      series: dive.value.series,
       title: `Dive #${diveNo}`,
     }, chartElement.value, tooltip.value);
 }
@@ -37,9 +38,9 @@ function toggleVisibile(dataSeries) {
     <div class="chart-holder">
       <div ref="chartElement"></div>
       <div ref="tooltip" class="tooltip"></div>
-      <div v-if="dive?.data" class="button-group">
+      <div v-if="dive?.series" class="button-group">
         <button
-          v-for="dataSeries in dive.data"
+          v-for="dataSeries in dive.series"
           :key="dataSeries.name"
           class="outline"
           :style="{

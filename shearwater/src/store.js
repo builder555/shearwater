@@ -128,7 +128,7 @@ export const useMainStore = defineStore('main', () => {
     const tempUnits = result.openingData.temp_units;
     const nextStopTitle = hasDataPoints(next_stop_depth) ? 'Next Stop' : 'NDL';
 
-    result.data = [
+    result.series = [
       { isVisible: true, name: 'Depth', title: `Depth (${depthUnits})`, data: depth, color: '#f0f0f0' },
       { isVisible: false, name: 'SAC', title: 'SAC Rate (PSI/min)', data: sac, color: '#3faa24' },
       {
@@ -164,7 +164,7 @@ export const useMainStore = defineStore('main', () => {
         color: '#4682b4',
       },
     ].filter((d) => hasDataPoints(d.data));
-    setVisibilities(result.data, seriesVisibility);
+    setVisibilities(result.series, seriesVisibility);
     return result;
   }
 
