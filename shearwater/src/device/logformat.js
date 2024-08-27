@@ -1,4 +1,4 @@
-import { getDateTime, getHhMmSs, getDaysHhMm } from './date.functions';
+import { getDateTime, getHhMmSs, getDaysHhMm, getDate, getTime } from './date.functions';
 
 export function mapRawOpeningToReadable(dive) {
   if (!dive) return {};
@@ -26,6 +26,8 @@ export function mapRawOpeningToReadable(dive) {
     depth_units: depth_units,
     cns: `${dive.cns}%`,
     dive_start: getDateTime(dive.dive_start),
+    dive_start_date: getDate(dive.dive_start),
+    dive_start_time: getTime(dive.dive_start),
     o2_status: {
       1: dive.o2_status & 0b001 ? 'yes' : 'no',
       2: dive.o2_status & 0b010 ? 'yes' : 'no',
@@ -82,6 +84,8 @@ export function mapRawClosingToReadable(dive) {
     product: dive.product,
     checksum: 111,
     dive_end: getDateTime(dive.dive_end),
+    dive_end_date: getDate(dive.dive_end),
+    dive_end_time: getTime(dive.dive_end),
     dive_length: getHhMmSs(dive.dive_length),
     dive_time_with_min_rct: getHhMmSs(dive.dive_time_with_min_rct), //minutes
     dive_time_with_min_rst: getHhMmSs(dive.dive_time_with_min_rst), //minutes
