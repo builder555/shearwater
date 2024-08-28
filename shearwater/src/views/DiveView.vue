@@ -51,16 +51,8 @@ function toggleVisibile(dataSeries) {
         >{{ dataSeries.name }}</button>
       </div>
     </div>
-    <div class="dive-data"> 
-      <div class="general">
-        <div class="number">Dive #{{ dive?.openingData.dive_number }}</div>
-        <div class="time">Surface time: {{dive?.openingData.surface_time}}</div>
-        <div class="start">Dive start: {{dive?.openingData.dive_start}}</div>
-        <div class="end">Dive end: {{dive?.closingData.dive_end}}</div>
-        <div class="length">Dive length: {{dive?.closingData.dive_length}}</div>
-        <div class="depth">Max depth: {{dive?.closingData.max_depth}}{{ dive?.openingData.depth_units }}</div>
-        <div class="pressure">Surface pressure: {{dive?.openingData.surface_pressure}}</div>
-      </div> 
+    <div class="dive-data">
+      <DiveDetailsGeneral v-if="dive" :dive="{...dive?.openingData, ...dive?.closingData}" />
     </div>
   </div>
 
@@ -72,21 +64,6 @@ function toggleVisibile(dataSeries) {
 }
 .dive-data {
   margin-top: 106px;
-  .general {
-    color: #333;
-    border-radius: 10px;
-    border: 2px solid #000;
-    background-color: #fff;
-    padding: 5px;
-    max-width: 600px;
-    width: 95%;
-    text-align: left;
-    margin-bottom: 10px;
-    width: 250px;
-    .number {
-      font-weight: bold;
-    }
-  }
 }
 .chart-holder {
   width: 100%;
