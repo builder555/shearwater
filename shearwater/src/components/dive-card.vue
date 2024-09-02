@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, computed } from 'vue';
+import { computed } from 'vue';
+import DiveClock from '@/components/dive-clock.vue';
 const props = defineProps(['dive']);
 const isDiveAvailable = computed(() => props.dive.isDownloaded || props.dive.canDownload);
 
@@ -13,65 +14,6 @@ function getFontSize(text) {
   return '2.5em';
 }
 
-function drawClock(ctx, radius, minutes) {
-    drawFace(ctx, radius);
-    drawTicks(ctx, radius);
-    drawTime(ctx, radius, minutes);
-}
-
-function drawBackgroundArc(ctx, startAngle, endAngle, radius) {
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.arc(0, 0, radius, startAngle, endAngle);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(114, 192, 210, 0.6)';
-    ctx.fill();
-}
-
-function drawFace(ctx, radius) {
-    ctx.beginPath();
-    ctx.arc(0, 0, radius * 0.01, 0, 2 * Math.PI);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-}
-
-function drawTicks(ctx, radius) {
-    let ang;
-    const ticks = 6;
-    ctx.strokeStyle = '#ff0';
-    for (let num = 1; num <= ticks; num++) {
-        ang = num * Math.PI / (ticks / 2);
-        ctx.rotate(ang);
-        ctx.translate(0, -radius * 0.99);
-        
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(0, radius * 0.2);
-        ctx.lineWidth = 0.75;
-        ctx.stroke();
-        
-        ctx.translate(0, radius * 0.99);
-        ctx.rotate(-ang);
-    }
-}
-
-function drawTime(ctx, radius, minutes) {
-    const hourPos = Math.PI * 2 * Math.min(120, minutes)/120;
-    drawBackgroundArc(ctx, Math.PI*1.5, hourPos - Math.PI / 2, radius);
-}
-
-function drawDiveClock(dive) {
-  const canvas = document.getElementById(`clock-${dive.id}`);
-  const ctx = canvas.getContext('2d');
-  const radius = canvas.height / 2;
-  ctx.translate(radius, radius);
-  const minutes = dive.diveDuration/60;
-  drawClock(ctx, radius, minutes);
-}
-
-onMounted(() => {
-  drawDiveClock(props.dive);
-});
 </script>
 <template>
   <div
@@ -108,12 +50,7 @@ onMounted(() => {
         display: flex; 
         justify-content: space-between;"
     >
-      <canvas
-        class="divetime"
-        :id="`clock-${dive.id}`"
-        width="50"
-        height="50"
-      ></canvas>
+      <dive-clock :minutes="dive.diveDuration/60"></dive-clock>
       <div style="color: rgb(237, 237, 157); display: inline-block;">
         Bottom Time<br>{{dive.diveDurationFmt}}
       </div>
@@ -158,11 +95,6 @@ onMounted(() => {
   }
   .dive h3 {
     margin: 0;
-  }
-  canvas.divetime {
-    background: linear-gradient(rgb(102, 115, 119), rgba(52, 60, 62, 1));
-    border-radius: 50%;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
   }
   hr {
     border: 0;
