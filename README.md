@@ -105,7 +105,7 @@ TODO
     - [x] avg_ppo2
     - [ ] o2_percent
     - [ ] he_percent
-    - [ ] next_stop_or_ndl_time
+    - [x] next_stop_or_ndl_time
     - [ ] battery_percent_remaining
     - [ ] statuses
     - [ ] o2_sensor_1_mv
@@ -118,12 +118,11 @@ TODO
     - [ ] gtr
     - [ ] cns
     - [ ] deco_ceiling
-    - [ ] gf99
+    - [x] gf99
     - [ ] at_plus_5
     - [x] ai_t1_data
     - [x] sac
     - use colors: 
-        # - Yellow
         #ff007f - Magenta
         #00ff00 - Bright Green
         #ff00ff - Fuchsia
@@ -137,20 +136,17 @@ TODO
         #8b008b - Dark Magenta
         #9acd32 - Yellow Green
         #4682b4 - Steel Blue
-        # - Chocolate
         #556b2f - Dark Olive Green
-        # - Dark Salmon
 
 - [ ] display data for a dive:
     - [ ] opening record:
-        - [ ] dive_number
+        - [x] dive_number
         - [ ] gf_low
         - [ ] gf_high
         - [ ] tts
-        - [ ] depth_units
         - [ ] battery_voltage_x10
         - [ ] cns
-        - [ ] dive_start
+        - [x] dive_start
         - [ ] o2_status
         - [ ] ppo2_low_x100
         - [ ] ppo2_high_x100
@@ -182,7 +178,7 @@ TODO
         - [ ] is_single_ppo2_sensor
         - [ ] gf_low
         - [ ] gf_high
-        - [ ] surface_pressure_mbars
+        - [x] surface_pressure_mbars
         - [ ] serial_number
         - [ ] error_flags_0
         - [ ] error_flags_1
@@ -199,10 +195,8 @@ TODO
         - [ ] sensor_display
         - [ ] last_stop_depth
         - [ ] end_dive_delay
-        - [ ] clock_format
-        - [ ] title_color
         - [ ] show_ppo2_in_oc_mode
-        - [ ] salinity
+        - [x] salinity
         - [ ] gfs_value
         - [ ] calibration_status
         - [ ] sensor_1_calibration
@@ -227,25 +221,17 @@ TODO
         - [ ] battery_setting
         - [ ] battery_warning_level_x100
         - [ ] battery_critical_level_x100
-        - [ ] log_version
         - [ ] gas_states
-        - [ ] temp_units
         - [ ] error_flags_2
         - [ ] error_acks_2
         - [ ] ai_mode
         - [ ] gtr_mode
-        - [ ] ai_units
         - [ ] ai_t1_serial
         - [ ] ai_t1_max_psi
         - [ ] ai_t1_reserve_psi
         - [ ] ai_t2_serial
         - [ ] ai_t2_max_psi
         - [ ] ai_t2_reserve_psi
-        - [ ] log_sample_rate_ms
-        - [ ] expected_log_sample_format
-        - [ ] timezone_offset
-        - [ ] dst
-        - [ ] language
         - [ ] total_stack_time
         - [ ] remaining_stack_time
         - [ ] sub_mode_oc_rec
@@ -270,15 +256,11 @@ TODO
         - [ ] ai_sidemount_switch_psi
         - [ ] error_flags_3
         - [ ] error_acks_3
-        - [ ] extended_dive_samples_in_log
     - [ ] closing record:
-        - [ ] dive_number
-        - [ ] battery_voltage_x10
         - [ ] cns
         - [ ] o2_status
         - [ ] ppo2_low_x100
         - [ ] ppo2_high_x100
-        - [ ] firmware_version
         - [ ] gas_0_oc_o2
         - [ ] gas_1_oc_o2
         - [ ] gas_2_oc_o2
@@ -292,8 +274,8 @@ TODO
         - [ ] gas_0_oc_he
         - [ ] gas_1_oc_he
         - [ ] max_depth_x10
-        - [ ] dive_length
-        - [ ] dive_end
+        - [x] dive_length
+        - [x] dive_end
         - [ ] gas_2_oc_he
         - [ ] gas_3_oc_he
         - [ ] gas_4_oc_he
@@ -306,11 +288,8 @@ TODO
         - [ ] ccr_auto_sp_switch_up_depth
         - [ ] ccr_auto_sp_switch_up_hi_lo
         - [ ] ccr_auto_sp_switch_down_depth
-        - [ ] is_single_ppo2_sensor
         - [ ] gf_low
         - [ ] gf_high
-        - [ ] surface_pressure_mbars
-        - [ ] serial_number
         - [ ] max_descent_rate
         - [ ] avg_descent_rate
         - [ ] max_ascent_rate
@@ -330,10 +309,8 @@ TODO
         - [ ] sensor_display
         - [ ] last_stop_depth
         - [ ] end_dive_delay
-        - [ ] clock_format
-        - [ ] title_color
         - [ ] show_ppo2_in_oc_mode
-        - [ ] salinity
+        - [x] salinity
         - [ ] gfs_value
         - [ ] calibration_status
         - [ ] sensor_1_calibration
@@ -362,14 +339,11 @@ TODO
         - [ ] battery_setting
         - [ ] battery_warning_level_x100
         - [ ] battery_critical_level_x100
-        - [ ] log_version
         - [ ] gas_states
-        - [ ] temp_units
         - [ ] error_flags_2
         - [ ] error_acks_2
         - [ ] ai_mode
         - [ ] gtr_mode
-        - [ ] ai_units
         - [ ] ai_t1_serial
         - [ ] ai_t1_max_psi
         - [ ] ai_t1_reserve_psi
@@ -378,16 +352,10 @@ TODO
         - [ ] ai_t2_reserve_psi
         - [ ] log_sample_rate_ms
         - [ ] expected_log_sample_format
-        - [ ] timezone_offset
-        - [ ] dst
-        - [ ] language
         - [ ] last_avg_sac_x100
     - [ ] final record:
-            - [ ] serial_number
-            - [ ] checksum
-            - [ ] firmware_version
-            - [ ] log_version
-            - [ ] product
+        - [ ] firmware_version
+        - [ ] product
 
 - [x] add ability to download selected dives
 - [ ] ensure proper UX:
