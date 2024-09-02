@@ -1,39 +1,102 @@
 <script setup>
-defineProps(['dive']);
+import { onMounted } from 'vue';
+import {RadialGauge} from 'canvas-gauges';
+const props = defineProps(['dive']);
+onMounted(() => {
+  new RadialGauge({
+      renderTo: 'canv-id',
+      value: props.dive.surface_pressure_mbars / 1000,
+      units: 'Bar',
+      title: 'Surface Pressure',
+      majorTicks: [0.8, 0.9, 1, 1.1, 1.2, 1.3],
+      minValue: 0.8,
+      maxValue: 1.3,
+      highlights: [],
+      width: 250,
+      borders: false,
+  }).draw();
+});
 </script>
 <template>
   <div class="general">
-    <div class="date">{{dive.dive_start_date}}</div>
-    <div class="dive-time">{{dive.dive_length}}</div>
-    <div class="times">Dive times: {{ dive.dive_start_time }} - {{ dive.dive_end_time }}</div>
-    <div class="depth">Max depth: {{dive.max_depth}}{{ dive.depth_units }}</div>
-    <div class="pressure">Surface pressure: {{dive.surface_pressure}}</div>
-    <div class="surface-time">Surface time: {{dive.surface_time}}</div>
-  </div> 
+    <div class="flex space-between">
+      <div class="col-left striped-rows font-1_1">
+        <div class="date" style="font-size: 1.5em; text-align: center;">{{dive.dive_start_date}}</div>
+        <div class="dive-time flex space-between">
+          <div>Duration:</div>
+          <div class="text-right">{{dive.dive_length_fmt}}</div></div>
+        <div class="times flex space-between">
+          <div>Time In/Out:</div> 
+          <div class="text-right">{{ dive.dive_start_time }} - {{ dive.dive_end_time }}</div>
+        </div>
+        <div class="times flex space-between">
+          <div>Surface Time:</div> 
+          <div class="text-right">{{dive.surface_time}}</div>
+        </div>
+      </div>
+      <div class="col-right text-center">
+        <span style="font-size: 1.8em">Depth</span>
+        <div class="depth">{{dive.max_depth}}{{ dive.depth_units }}</div>
+        <hr>
+        <div style="font-size: 1.2em; text-transform: uppercase;">{{dive.water_type}}</div>
+        <span style="font-size: 1.1em">water</span>
+      </div>
+    </div>
+  </div>
+  <canvas id="canv-id"></canvas>
 </template>
 <style lang="scss" scoped>
+.flex {
+  display: flex;
+  flex-direction: row;
+  &.column {
+    flex-direction: column;
+  }
+}
+.striped-rows {
+  &>div {
+    padding: 3px;
+  }
+  &>div:nth-child(even) {
+    background: #555;
+    color: #fff
+  }
+}
+.flex-end {
+  justify-content: flex-end;
+}
+.font-1_1 {
+  font-size: 1.1em;
+}
+.space-between {
+  justify-content: space-between;
+}
+.text-right {
+  text-align: right;
+}
+.text-center {
+  text-align: center;
+}
 .general {
   color: #333;
   border-radius: 10px;
   border: 2px solid #000;
   background-color: #fff;
-  padding: 5px;
   width: 95%;
   text-align: left;
   margin-bottom: 10px;
   width: 300px;
-  .number {
-    font-weight: bold;
+  overflow: hidden;
+  .col-left {
+    flex-grow:2;
+    border-right: 1px solid #ccc;
   }
-  .date, .dive-time {
+  .col-right {
+    padding-left: 3px;
+  }
+  .depth {
     font-weight: bold;
-    background: #333;
-    color: #fff;
-    border-radius: 10px;
-    padding: 5px;
-    width: auto;
-    background: linear-gradient(to bottom, #444 0%, #222 100%);
-    display:inline-block;
+    font-size: 1.8em;
   }
 }
 </style>

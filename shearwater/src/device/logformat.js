@@ -62,6 +62,7 @@ export function mapRawOpeningToReadable(dive) {
     ccr_auto_sp_switch_down_depth: `${dive.ccr_auto_sp_switch_down_depth}${depth_units}`,
     is_single_ppo2_sensor: dive.is_single_ppo2_sensor ? 'yes' : 'no',
     surface_pressure: `${dive.surface_pressure_mbars / 1000} bar`,
+    surface_pressure_mbars: dive.surface_pressure_mbars,
     serial_number: dive.serial_number,
     deco_model,
     vpm_b_conservatism: dive.vpm_b_conservatism,
@@ -86,7 +87,8 @@ export function mapRawClosingToReadable(dive) {
     dive_end: getDateTime(dive.dive_end),
     dive_end_date: getDate(dive.dive_end),
     dive_end_time: getTime(dive.dive_end),
-    dive_length: getHhMmSs(dive.dive_length),
+    dive_length: dive.dive_length,
+    dive_length_fmt: getHhMmSs(dive.dive_length),
     dive_time_with_min_rct: getHhMmSs(dive.dive_time_with_min_rct), //minutes
     dive_time_with_min_rst: getHhMmSs(dive.dive_time_with_min_rst), //minutes
     last_sac: dive.last_avg_sac_x100 / 100,

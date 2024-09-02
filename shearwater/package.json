@@ -11,6 +11,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "canvas-gauges": "^2.1.7-radial",
     "pinia": "^2.1.7",
     "uplot": "^1.6.30",
     "vue": "^3.4.29",
