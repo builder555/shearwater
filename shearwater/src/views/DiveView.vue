@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router';
 import { useMainStore } from '@/store';
 import { makeChart } from '@/chartformatter';
 import DiveDetailsGeneral from '@/components/dive-details-general.vue';
+import PressureGauge from '@/components/pressure-gauge.vue';
+import TransmitterDetails from '@/components/transmitter-detailes.vue';
 
 const store = useMainStore();
 const { getDiveDetails, toggleSeriesVisibility } = store;
@@ -53,6 +55,8 @@ function toggleVisibile(dataSeries) {
     </div>
     <div class="dive-data">
       <DiveDetailsGeneral v-if="dive" :dive="{...dive?.openingData, ...dive?.closingData}" />
+      <PressureGauge v-if="dive"  :dive="{...dive?.openingData, ...dive?.closingData}" />
+      <TransmitterDetails v-if="dive" :dive="{...dive?.openingData, ...dive?.closingData}" />
     </div>
   </div>
 
