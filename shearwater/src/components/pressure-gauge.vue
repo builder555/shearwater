@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted } from 'vue';
+import {RadialGauge} from 'canvas-gauges';
 const props = defineProps(['dive']);
 onMounted(() => {
   new RadialGauge({
