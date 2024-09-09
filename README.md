@@ -226,12 +226,12 @@ TODO
         - [ ] error_acks_2
         - [ ] ai_mode
         - [ ] gtr_mode
-        - [ ] ai_t1_serial
-        - [ ] ai_t1_max_psi
-        - [ ] ai_t1_reserve_psi
-        - [ ] ai_t2_serial
-        - [ ] ai_t2_max_psi
-        - [ ] ai_t2_reserve_psi
+        - [x] ai_t1_serial
+        - [x] ai_t1_max_psi
+        - [x] ai_t1_reserve_psi
+        - [x] ai_t2_serial
+        - [x] ai_t2_max_psi
+        - [x] ai_t2_reserve_psi
         - [ ] total_stack_time
         - [ ] remaining_stack_time
         - [ ] sub_mode_oc_rec
@@ -239,20 +239,20 @@ TODO
         - [ ] depth_alert
         - [ ] time_alert
         - [ ] low_ndl_alert
-        - [ ] ai_t1_on
-        - [ ] ai_t1_name
-        - [ ] ai_t2_on
-        - [ ] ai_t2_name
-        - [ ] ai_t3_serial
-        - [ ] ai_t3_max_psi
-        - [ ] ai_t3_reserve_psi
-        - [ ] ai_t3_on
-        - [ ] ai_t3_name
-        - [ ] ai_t4_serial
-        - [ ] ai_t4_max_psi
-        - [ ] ai_t4_reserve_psi
-        - [ ] ai_t4_on
-        - [ ] ai_t4_name
+        - [x] ai_t1_on
+        - [x] ai_t1_name
+        - [x] ai_t2_on
+        - [x] ai_t2_name
+        - [x] ai_t3_serial
+        - [x] ai_t3_max_psi
+        - [x] ai_t3_reserve_psi
+        - [x] ai_t3_on
+        - [x] ai_t3_name
+        - [x] ai_t4_serial
+        - [x] ai_t4_max_psi
+        - [x] ai_t4_reserve_psi
+        - [x] ai_t4_on
+        - [x] ai_t4_name
         - [ ] ai_sidemount_switch_psi
         - [ ] error_flags_3
         - [ ] error_acks_3
@@ -361,9 +361,7 @@ TODO
 - [ ] ensure proper UX:
     - [x] progress bar when downloading manifest
     - [ ] when fetching new dives - sort them by date
-    - [ ] display progress bar when downloading logs:
-        - when decoding records, each entry is a 10s chunk (based on sample rate)
-        - take duration, divide by sample rate to get a rough idea of how many entries there are
+    - [x] display progress bar when downloading logs
     - [x] display a message when no dives are stored
     - [ ] compact view for log manifest
     - [ ] use color to indicate computer connected or not
