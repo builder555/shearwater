@@ -13,6 +13,7 @@ onMounted(() => {
     maxValue: 1.3,
     highlights: [],
     width: 250,
+    height: 250,
     borders: false,
   }).draw();
 });
