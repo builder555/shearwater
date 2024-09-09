@@ -68,6 +68,7 @@ button.outline.selected {
 .flex {
   display: flex;
   flex-direction: row;
+  align-items: flex-start;
 }
 .flex.column {
   flex-direction: column;
@@ -90,4 +91,7 @@ button.outline.selected {
 }
 .text-center {
   text-align: center;
+}
+.flex-wrap {
+  flex-wrap: wrap;
 }
