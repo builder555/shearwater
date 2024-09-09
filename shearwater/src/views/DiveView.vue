@@ -53,10 +53,35 @@ function toggleVisibile(dataSeries) {
         >{{ dataSeries.name }}</button>
       </div>
     </div>
-    <div class="dive-data">
-      <DiveDetailsGeneral v-if="dive" :dive="{...dive?.openingData, ...dive?.closingData}" />
-      <PressureGauge v-if="dive"  :dive="{...dive?.openingData, ...dive?.closingData}" />
-      <TransmitterDetails v-if="dive" :dive="{...dive?.openingData, ...dive?.closingData}" />
+    <div class="dive-data flex flex-wrap">
+      <DiveDetailsGeneral
+        v-if="dive"
+        :dive="{...dive?.openingData, ...dive?.closingData}"
+      />
+      <TransmitterDetails
+        v-if="dive?.openingData?.ai_t1_on"
+        :dive="{...dive?.openingData, ...dive?.closingData}"
+        transmitter="1"
+      />
+      <TransmitterDetails
+        v-if="dive?.openingData?.ai_t2_on"
+        :dive="{...dive?.openingData, ...dive?.closingData}"
+        transmitter="2"
+      />
+      <TransmitterDetails
+        v-if="dive?.openingData?.ai_t3_on"
+        :dive="{...dive?.openingData, ...dive?.closingData}"
+        transmitter="3"
+      />
+      <TransmitterDetails
+        v-if="dive?.openingData?.ai_t4_on"
+        :dive="{...dive?.openingData, ...dive?.closingData}"
+        transmitter="4"
+      />
+      <PressureGauge
+        v-if="dive"
+        :dive="{...dive?.openingData, ...dive?.closingData}"
+      />
     </div>
   </div>
 
