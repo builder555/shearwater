@@ -4,8 +4,8 @@ defineProps(['dive']);
 <template>
   <div class="general">
     <div class="flex space-between">
-      <div class="col-left striped-rows font-1_1">
-        <div class="date" style="font-size: 1.5em; text-align: center;">{{dive.dive_start_date}}</div>
+      <div class="col-left striped-rows" style="font-size: 1.1em">
+        <div class="text-center" style="font-size: 1.5em;">{{dive.dive_start_date}}</div>
         <div class="dive-time flex space-between">
           <div>Duration:</div>
           <div class="text-right">{{dive.dive_length_fmt}}</div></div>
@@ -29,37 +29,6 @@ defineProps(['dive']);
   </div>
 </template>
 <style lang="scss" scoped>
-.flex {
-  display: flex;
-  flex-direction: row;
-  &.column {
-    flex-direction: column;
-  }
-}
-.striped-rows {
-  &>div {
-    padding: 3px;
-  }
-  &>div:nth-child(even) {
-    background: #555;
-    color: #fff
-  }
-}
-.flex-end {
-  justify-content: flex-end;
-}
-.font-1_1 {
-  font-size: 1.1em;
-}
-.space-between {
-  justify-content: space-between;
-}
-.text-right {
-  text-align: right;
-}
-.text-center {
-  text-align: center;
-}
 .general {
   color: #333;
   border-radius: 10px;

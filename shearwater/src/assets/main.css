@@ -65,3 +65,29 @@ button.outline.selected {
   align-items: center;
   text-align: center;
 }
+.flex {
+  display: flex;
+  flex-direction: row;
+}
+.flex.column {
+  flex-direction: column;
+}
+.striped-rows>div {
+  padding: 3px;
+}
+.striped-rows>div:nth-child(even) {
+  background: #555;
+  color: #fff
+}
+.flex-end {
+  justify-content: flex-end;
+}
+.space-between {
+  justify-content: space-between;
+}
+.text-right {
+  text-align: right;
+}
+.text-center {
+  text-align: center;
+}
