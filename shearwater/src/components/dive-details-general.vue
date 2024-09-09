@@ -34,7 +34,6 @@ defineProps(['dive']);
   border-radius: 10px;
   border: 2px solid #000;
   background-color: #fff;
-  width: 95%;
   text-align: left;
   margin-bottom: 10px;
   width: 300px;
