@@ -10,9 +10,9 @@ export function mapRawOpeningToReadable(dive) {
   }
   const depth_units = ['m', 'ft'][dive.depth_units];
   const deco_model = ['GF', 'VPM-B', 'VPMB-B/GFS', 'DCIEM'][dive.deco_model];
-  const battery_type = ['', '1.5V Alkaline', '1.5V Lithium', '1.2VV NiMH', '3.6V Saft', '3.7V Li-Ion'][
-    dive.battery_type
-  ];
+  const battery_type_names = ['', '1.5V Alkaline', '1.5V Lithium', '1.2VV NiMH', '3.6V Saft', '3.7V Li-Ion'];
+  const battery_autodetect = dive.battery_setting == 0 ? ' (auto-detected)' : '';
+  const battery_type = `${battery_type_names[dive.battery_type]}${battery_autodetect}`;
   const temp_units_configured = { 2: 'C', 3: 'F' }[dive.temp_units];
   // shearwater returns temperature in C for metric depth units and in F for imperial
   const temp_units = ['C', 'F'][dive.depth_units];
@@ -67,6 +67,10 @@ export function mapRawOpeningToReadable(dive) {
     deco_model,
     vpm_b_conservatism: dive.vpm_b_conservatism,
     water_type: getWaterType(dive.salinity),
+    battery_voltage: `${dive.battery_voltage_x100 / 100}V`,
+    battery_percentage: `${dive.battery_percent_remaining}%`,
+    battery_warning_level: `${dive.battery_warning_level_x100/100}V`,
+    battery_critical_level: `${dive.battery_critical_level_x100/100}V`,
     battery_type,
     temp_units,
     temp_units_configured,

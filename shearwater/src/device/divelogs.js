@@ -152,7 +152,7 @@ export class LogDecoder {
       co2_temp_weight: getNum(data.slice(3, 5)),
       battery_voltage_x100: getNum(data.slice(5, 7)),
       battery_gauge_available: getNum(data.slice(7, 8)),
-      battery_percent_remain: getNum(data.slice(8, 9)),
+      battery_percent_remaining: getNum(data.slice(8, 9)),
       battery_type: getNum(data.slice(9, 10)),
       battery_setting: getNum(data.slice(10, 11)),
       battery_warning_level_x100: getNum(data.slice(11, 13)),
