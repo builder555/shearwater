@@ -76,7 +76,8 @@ button.outline.selected {
 .striped-rows>div {
   padding: 3px;
 }
-.striped-rows>div:nth-child(even) {
+.striped-rows:not(.inverted)>div:nth-child(even),
+.striped-rows.inverted>div:nth-child(odd) {
   background: #555;
   color: #fff
 }
