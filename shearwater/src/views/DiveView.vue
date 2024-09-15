@@ -6,6 +6,7 @@ import { makeChart } from '@/chartformatter';
 import DiveDetailsGeneral from '@/components/dive-details-general.vue';
 import PressureGauge from '@/components/pressure-gauge.vue';
 import TransmitterDetails from '@/components/transmitter-detailes.vue';
+import ComputerInfo from '@/components/computer-info.vue';
 
 const store = useMainStore();
 const { getDiveDetails, toggleSeriesVisibility } = store;
@@ -53,7 +54,11 @@ function toggleVisibile(dataSeries) {
         >{{ dataSeries.name }}</button>
       </div>
     </div>
-    <div class="dive-data flex flex-wrap">
+    <div class="dive-data flex flex-wrap spaced">
+      <ComputerInfo 
+        v-if="dive"
+        :dive="{...dive?.openingData, ...dive?.closingData}"
+      />
       <DiveDetailsGeneral
         v-if="dive"
         :dive="{...dive?.openingData, ...dive?.closingData}"
@@ -87,6 +92,13 @@ function toggleVisibile(dataSeries) {
 
 </template>
 <style scoped lang="scss">
+.spaced {
+  justify-content: space-around;
+}
+.spaced>div {
+  flex-grow: 0;
+  width: 300px !important;
+}
 .background {
   background: #141619;
   color: #c7d0d9;  
@@ -94,6 +106,7 @@ function toggleVisibile(dataSeries) {
 .dive-data {
   margin-top: 106px;
 }
+
 .chart-holder {
   width: 100%;
   height: 55vh;
