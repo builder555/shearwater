@@ -71,7 +71,7 @@ $batteryColor: hsl(var(--battery-color), 100%, 30%);
     content: "";
     position: absolute;
     right: - 3 * $margin;
-    top: ($size - 7 * $margin) / 2 - $border;
+    top: calc(($size - 7 * $margin) / 2 - $border);
     width: 2 * $margin;
     height: $size - 7 * $margin;
     background-color: $batteryColor;
