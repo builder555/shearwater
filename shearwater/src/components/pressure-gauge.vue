@@ -12,13 +12,22 @@ onMounted(() => {
     minValue: 0.8,
     maxValue: 1.3,
     highlights: [],
-    width: 250,
-    height: 250,
+    width: 200,
+    height: 200,
     borders: false,
   }).draw();
 });
 
 </script>
 <template>
-  <canvas id="gauge"></canvas>
+  <div>
+    <canvas id="gauge"></canvas>
+  </div>
 </template>
+<style scoped>
+div {
+  width: 100%;
+  justify-content: center;
+  display: flex;
+}
+</style>
