@@ -79,6 +79,14 @@ npm run dev
 
 Navigate to http://localhost:5173
 
+### Testing
+
+```shell
+npm test              # run tests once
+npm run test:watch    # watch mode
+npm run coverage      # run with coverage report
+```
+
 <details>
 <summary>
 TODO
