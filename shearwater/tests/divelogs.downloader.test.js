@@ -76,4 +76,5 @@ describe('LogDownloader', () => {
     expect(dl._isAcked).toBe(false);
     expect(dl._isLogDone).toBe(false);
   });
+
 });

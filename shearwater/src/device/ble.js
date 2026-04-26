@@ -64,7 +64,7 @@ export class BLEShearwater {
   }
 
   unsubscribe() {
-    this.callbacks = null;
+    this._onDataCallback = null;
   }
 
   async sendData(data) {

@@ -109,6 +109,7 @@ describe('BLEShearwater', () => {
     expect(cb2).toHaveBeenCalledOnce();
   });
 
+
   it('disconnect handler clears name and fires user callback', async () => {
     const ble = new BLEShearwater();
     await ble.connect();
@@ -151,4 +152,13 @@ describe('BLEShearwater', () => {
     await ble.connect();
     expect(() => ble.unsubscribe()).not.toThrow();
   });
+  it('unsubscribe prevents further data delivery', async () => {
+    const ble = new BLEShearwater();
+    await ble.connect();
+    const cb = vi.fn();
+    ble.subscribe(cb);
+    ble.unsubscribe();
+    stubs.fakeChar._fire('characteristicvaluechanged', new Uint8Array([1]));
+    expect(cb).not.toHaveBeenCalled();
+  });  
 });
