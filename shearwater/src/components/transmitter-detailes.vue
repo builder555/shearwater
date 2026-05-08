@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import VintageGauge from './VintageGauge.vue';
 const props = defineProps(['dive', 'transmitter']);
 const transmitter = ref({
   name: props.dive[`ai_t${props.transmitter}_name`],
@@ -9,22 +10,29 @@ const transmitter = ref({
 });
 </script>
 <template>
-  <div class="air-transmitter flex">
-    <div><img src="@/assets/transmitter.png"></div>
-    <div class="striped-rows" style="flex-grow:2">
-      <div>Air Transmitter: {{ transmitter.name }}</div>
-      <div>Serial: {{ transmitter.serial }}</div>
-      <div>Max PSI: {{ transmitter.max_psi }}</div>
-      <div>Reserve PSI: {{ transmitter.reserve_psi }}</div>
+  <div class="vintage-card air-transmitter">
+    <div class="card-stripe"></div>
+    <div class="card-title" style="display:flex; align-items: center; justify-content: space-between;">
+      <span>Air Transmitter · {{ transmitter.name }}</span>
+      <!-- push to the right -->
+      <span>S/N: {{ transmitter.serial }}</span>
     </div>
+    <VintageGauge
+    :value="transmitter.reserve_psi"
+    :min="0"
+      :max="transmitter.max_psi"
+      :threshold="transmitter.reserve_psi"
+      :center-text="transmitter.max_psi.toLocaleString()"
+      unit="PSI"
+      label="TANK CAPACITY"
+      :size="160"
+    />
   </div>
 </template>
 <style scoped>
-  .air-transmitter {
-    background-color: #fff;
-    width: 300px;
-    color: #333;
-    border-radius: 10px;
-    overflow: hidden;
-  }
+.air-transmitter {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
 </style>

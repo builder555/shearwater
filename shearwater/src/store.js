@@ -101,7 +101,7 @@ export const useMainStore = defineStore('main', () => {
     });
     
   }
-  async function getDiveDetails(id) {
+  async function getDiveDetails(id, isMobile = false) {
     isBusy.value = true;
     const diveData = await fetchDiveLog(id);
     const {
@@ -139,7 +139,7 @@ export const useMainStore = defineStore('main', () => {
         color: '#ef7b00',
       },
       { isVisible: false, name: 'Avg. ppO2', title: 'Avg. PPO2 (ATA)', data: avg_ppo2, color: '#992cf8' },
-      { isVisible: true, name: 'AI T1', title: 'AI T1 (PSI)', data: ai_t1_data, color: '#3877eb' },
+      { isVisible: !isMobile, name: 'AI T1', title: 'AI T1 (PSI)', data: ai_t1_data, color: '#3877eb' },
       { isVisible: false, name: 'AI T2', title: 'AI T2 (PSI)', data: ai_t2_data, color: '#00c8ff' },
       {
         isVisible: false,

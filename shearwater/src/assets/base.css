@@ -24,6 +24,16 @@ html, body {
   --button-hover-text: #fff;
   --scrollbar-thumb-hover: var(--button-hover-bg);
   --animation-duration: 0.1s;
+
+  /* vintage palette */
+  --v-teal: #1b8080;
+  --v-teal-dark: #135858;
+  --v-teal-darkest: #0a3838;
+  --v-orange: #e05a00;
+  --v-orange-light: #f08828;
+  --v-yellow: #f5a623;
+  --v-cream: #f0e6cc;
+  --v-dark: #0d1a1a;
 }
 button {
   transition:

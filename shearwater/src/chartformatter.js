@@ -71,14 +71,12 @@ export function makeChart(data, htmlElement, tooltipElement) {
     // depth chart is inverted
     scales[depthSeries.name].dir = -1;
   }
-  const axes = dataSeries.map((s) => ({ scale: s.name, label: s.title, stroke: '#c7d0d9', side: 1 }));
+  const axes = dataSeries.map((s) => ({ scale: s.name, label: s.title, stroke: '#f0e6cc', side: 1 }));
   axes[0] = {
     ...axes[0],
-    // first series should have y-axis on the left
-    // it should also have gridlines
     side: 3,
-    grid: { width: 1 / devicePixelRatio, stroke: '#2c3235' },
-    ticks: { width: 1 / devicePixelRatio, stroke: '#2c3235' },
+    grid: { width: 1 / devicePixelRatio, stroke: 'rgba(240,230,204,0.12)' },
+    ticks: { width: 1 / devicePixelRatio, stroke: 'rgba(240,230,204,0.15)' },
   };
   const series = dataSeries.map((s) => ({
     points: { show: false },
@@ -98,9 +96,9 @@ export function makeChart(data, htmlElement, tooltipElement) {
     axes: [
       {
         space: 90,
-        stroke: '#c7d0d9',
-        grid: { width: 1 / devicePixelRatio, stroke: '#2c3235' },
-        ticks: { width: 1 / devicePixelRatio, stroke: '#2c3235' },
+        stroke: '#f0e6cc',
+        grid: { width: 1 / devicePixelRatio, stroke: 'rgba(240,230,204,0.12)' },
+        ticks: { width: 1 / devicePixelRatio, stroke: 'rgba(240,230,204,0.15)' },
         values: (self, ticks) => ticks.map((seconds) => getHhMmSs(seconds)),
       },
       ...axes,

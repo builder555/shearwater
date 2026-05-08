@@ -1,33 +1,28 @@
 <script setup>
-import { onMounted } from 'vue';
-import {RadialGauge} from 'canvas-gauges';
+import { computed } from 'vue';
+import VintageGauge from './VintageGauge.vue';
 const props = defineProps(['dive']);
-onMounted(() => {
-  new RadialGauge({
-    renderTo: 'gauge',
-    value: props.dive.surface_pressure_mbars / 1000,
-    units: 'Bar',
-    title: 'Surface Pressure',
-    majorTicks: [0.8, 0.9, 1, 1.1, 1.2, 1.3],
-    minValue: 0.8,
-    maxValue: 1.3,
-    highlights: [],
-    width: 200,
-    height: 200,
-    borders: false,
-  }).draw();
-});
-
+const pressureBar = computed(() => props.dive.surface_pressure_mbars / 1000);
 </script>
 <template>
-  <div>
-    <canvas id="gauge"></canvas>
+  <div class="vintage-card pressure-card">
+    <div class="card-stripe"></div>
+    <div class="card-title">Surface Pressure</div>
+    <VintageGauge
+      :value="pressureBar"
+      :min="0.8"
+      :max="1.3"
+      unit="BAR"
+      label="SURFACE"
+      :ticks="[0.9, 1.0, 1.1, 1.2]"
+      :size="160"
+    />
   </div>
 </template>
 <style scoped>
-div {
-  width: 100%;
-  justify-content: center;
+.pressure-card {
+  margin-bottom: 0;
   display: flex;
+  flex-direction: column;
 }
 </style>
